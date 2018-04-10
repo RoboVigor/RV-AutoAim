@@ -2,6 +2,8 @@
 
 来，携手共进，开发属于我们的自瞄外挂！
 
+[开发日志](https://note.krrr.party/#/article/article-792559)
+
 ## 目录
 
 ```
