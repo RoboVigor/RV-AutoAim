@@ -32,32 +32,31 @@ class Autoaim():
             cv2.imshow(winname, canny)
         return canny
 
-    def getPossibleRegion(self, mat=None, winname=None):
+    def getPossibleContours(self, mat=None, winname=None):
         if mat is None:
-            mat = self.mat
+            mat = self.g
+        # binarization
         thresh = self.threshold(mat)
-        image,contours,hierarchy = cv2.findContours(thresh, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-
-        _mat = self.mat.copy()
-        for i in range(0, len(contours)):
-            contour = contours[i]
+        # find contours
+        image,all_contours,hierarchy = cv2.findContours(thresh, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE) #get the contour
+        # find area between 50 and 100000
+        possible_contours = []
+        for i in range(0, len(all_contours)):
+            contour = all_contours[i]
             x,y,w,h = cv2.boundingRect(contour)
             area = w*h
             if area>50 and area<100000:
-                cv2.drawContours(_mat,[contour],-1,(0,255,0),1)
-            else:
-                print(area)
-
+                possible_contours.append(contour)
+        # draw the contours
         if not winname is None:
+            _mat = self.mat.copy()
+            cv2.drawContours(_mat,possible_contours,-1,(0,255,0),1)
             cv2.imshow(winname, _mat)
-        return contours
+        return possible_contours
 
 
 if __name__ == '__main__':
     autoaim = Autoaim('../data/miao2.jpg')
-    #autoaim.threshold(autoaim.r, 'binary')
-    autoaim.getPossibleRegion(autoaim.g, 'g')
-    autoaim.getPossibleRegion(autoaim.b, 'b')
-    autoaim.getPossibleRegion(autoaim.r, 'r')
+    autoaim.getPossibleContours(autoaim.g, 'g')
     cv2.waitKey(0)
     cv2.destroyAllWindows()
