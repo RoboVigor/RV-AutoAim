@@ -5,6 +5,7 @@ import math
 
 
 class Lamp():
+
     def __init__(self, contour, rect, greyscale, area):
         self.contour = contour
         self.greyscale = greyscale
@@ -14,8 +15,10 @@ class Lamp():
         self.h = rect[3]
         self.a = area
         self.paired = False
+
     def __lt__(self, other):
         return self.x < other.x
+
     def __eq__(self, other):
         return self.x==other.x and self.y==other.y and self.w==other.w and self.h==other.h
 

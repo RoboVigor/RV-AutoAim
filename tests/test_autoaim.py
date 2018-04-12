@@ -1,34 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tests for `autoaim` package."""
-
 
 import unittest
-from click.testing import CliRunner
-
-from autoaim import autoaim
-from autoaim import cli
+import sys
+sys.path.append('../')
+from autoaim.autoaim import ImgToolbox
 
 
 class TestAutoaim(unittest.TestCase):
-    """Tests for `autoaim` package."""
 
     def setUp(self):
-        """Set up test fixtures, if any."""
+        self.autoaim = ImgToolbox('../data/miao1.jpg')
 
-    def tearDown(self):
-        """Tear down test fixtures, if any."""
+    def test_threshold(self):
+        self.assertTrue(len(self.autoaim.threshold()) > 400)
 
-    def test_000_something(self):
-        """Test something."""
+    def test_findContours(self):
+        contours, rects = self.autoaim.findContours()
+        self.assertTrue(len(contours)==len(rects))
+        self.assertTrue(len(contours)>80)
 
-    def test_command_line_interface(self):
-        """Test the CLI."""
-        runner = CliRunner()
-        result = runner.invoke(cli.main)
-        assert result.exit_code == 0
-        assert 'autoaim.cli.main' in result.output
-        help_result = runner.invoke(cli.main, ['--help'])
-        assert help_result.exit_code == 0
-        assert '--help  Show this message and exit.' in help_result.output
+    def test_findLamps(self):
+        lamps = self.autoaim.findLamps()
+        self.assertTrue(len(lamps)>=2)
+
+    def test_pairLamps(self):
+        pair_lamps = self.autoaim.pairLamps()
+        self.assertTrue(len(pair_lamps)==1)
+
+
+
+if __name__ == '__main__':
+    unittest.main()
