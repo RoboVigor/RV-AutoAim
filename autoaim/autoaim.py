@@ -150,8 +150,7 @@ if __name__ == '__main__':
     '''
     autoaim = ImgToolbox('../data/miao2.jpg')
     autoaim.pairLamps(True)
-    #autoaim.show('miao '*3)
-    autoaim.show('o'*8+'h')
+    autoaim.show('miao '*3)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()

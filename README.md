@@ -3,14 +3,14 @@
 来，携手共进，开发属于我们的自瞄外挂！
 
 [开发日志](https://note.krrr.party/#/article/article-792559)
-## Usage
+## 使用
 
 ```python
 autoaim = ImgToolbox('path/to/img')
 autoaim.mat = autoaim.r # use the green channel (default)
 autoaim.drawMat = autoaim.src # use the source image to draw (default)
 autoaim.pairLamps(True) # use the method while drawing
-autoaim.show('o'*8+'h')
+autoaim.show('miao '*3)
 ```
 
 ## ImgToolbox
