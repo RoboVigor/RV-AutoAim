@@ -185,7 +185,7 @@ class ImgToolbox():
 
 if __name__ == '__main__':
     #213,268
-    test_index = 1
+    test_index = 2
     tests = [
         range(1, 7),
         range(1, 56),
@@ -201,8 +201,8 @@ if __name__ == '__main__':
         autoaim.findContours(True)
         autoaim.findLamps(True)'''
         autoaim.pairLamps(True)
-        #autoaim.show('miao '*3)
-        #cv2.waitKey(0)
+        autoaim.show('miao '*3)
+        cv2.waitKey(0)
     '''
     autoaim = ImgToolbox('../data/miao2.jpg')
     autoaim.pairLamps(True)
