@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 import cv2
-import numpy as np
+import numpy
 import math
 
 class Lamp():
 
-    def __init__(self, contour, rect, ellipse, greyscale, area, error):
+    def __init__(self, contour, rect, ellipse, greyscale, area, score=0):
         self.contour = contour
         self.greyscale = greyscale
         self.ellipse = ellipse
-        self.error = error
+        self.score = score
         self.x = rect[0]
         self.y = rect[1]
         self.w = rect[2]
@@ -29,7 +29,7 @@ class AimImageToolbox():
     def __init__(self, img):
         if isinstance(img, str):
             self.src = cv2.imread(img)
-        elif isinstance(src_img,np.ndarray):
+        elif isinstance(src_img,numpy.ndarray):
             self.src = img
         else:
             print('not a opencv pic, f*cker!!')
@@ -42,7 +42,7 @@ class AimImageToolbox():
         cv2.imshow(winname, self.draw_mat)
 
     def preprocess(self, draw=False):
-        mat = self.mat.copy()
+        mat = self.mat
         mat=cv2.GaussianBlur(mat, (3, 3), 0, 0, cv2.BORDER_DEFAULT)
         mat=cv2.medianBlur(mat, 5)
         mat = cv2.Sobel(mat, cv2.CV_8U, 1, 0,  ksize = 3)
@@ -52,6 +52,7 @@ class AimImageToolbox():
         mat = cv2.dilate(mat, element2, iterations = 1)
         mat = cv2.erode(mat, element1, iterations = 1)
         mat = cv2.dilate(mat, element2,iterations = 1)
+        self.mat = mat
         if draw:
             self.draw_mat = mat
         return mat
@@ -89,19 +90,8 @@ class AimImageToolbox():
             cv2.drawContours(draw_mat,possible_contours,-1,(0,0,255), 1)
         return possible_contours, possible_rects
 
-    def __getLampError(self, greyscale, rect, ellipse):
-        error = []
-        error_greyscale = (255-greyscale)/35
-        error += [0 if error_greyscale<0 else error_greyscale]
-        error += [0 if rect[3]/rect[2]>1.5 else (1.5-rect[3]/rect[2])/1.5]
-        angle = ellipse[2]
-        error += [(0 if angle<15 else (angle-15)/75)
-            if angle<90 else
-            (0 if angle>165 else (165-angle)/75)]
-        return error
-
     def findLamps(self, draw=False, contours=None, rects=None, weights=None, passline=None):
-        # default parameters
+        # default weights
         if weights is None:
             weights = [1,0.5,1]
         if passline is None:
@@ -115,9 +105,9 @@ class AimImageToolbox():
         areas = []
         for i in range(0, len(contours)):
             contour = contours[i]
-            ROI = np.zeros_like(mat)
-            cv2.drawContours(ROI, [contour], -1, color=255, thickness=-1)
-            pts = np.where(ROI == 255)
+            cimg = numpy.zeros_like(mat)
+            cv2.drawContours(cimg, [contour], -1, color=255, thickness=-1)
+            pts = numpy.where(cimg == 255)
             pts = mat[pts[0], pts[1]]
             greyscale = sum(pts)/len(pts)
             greyscales += [greyscale]
@@ -133,11 +123,15 @@ class AimImageToolbox():
         # determine the lamp
         lamps = []
         for i in range(0, len(rects)):
-            merror = np.array(self.__getLampError(greyscales[i], rects[i], ellipses[i])).T
-            mweights = np.array(weights)
-            error = np.dot(merror, mweights)
-            if error < passline:
-                lamp = Lamp(contours[i], rects[i], ellipses[i], greyscales[i], areas[i], error)
+            rect = rects[i]
+            score1 = (255-greyscales[i])/35
+            score1 = 0 if score1<0 else score1
+            score2 = 0 if rect[3]/rect[2]>1.5 else (1.5-rect[3]/rect[2])/1.5
+            angle = ellipses[i][2]
+            score3 = (0 if angle<15 else (angle-15)/75) if angle<90 else (0 if angle>165 else (165-angle)/75)
+            score = score1*weights[0] + score2*weights[1]+ score3*weights[2]
+            if score < passline:
+                lamp = Lamp(contours[i], rects[i], ellipses[i], greyscales[i], areas[i], score)
                 lamps += [lamp]
         lamps.sort()
         # draw
@@ -149,50 +143,16 @@ class AimImageToolbox():
                         (lamp.x+lamp.w,lamp.y+lamp.h),
                         (200,200,200)
                     )
-                cv2.putText(draw_mat, str(round(lamp.error,1)),
+                cv2.putText(draw_mat, str(round(lamp.score,1)),
                         (lamp.x,math.floor(lamp.y+lamp.h+10)),
                         cv2.FONT_HERSHEY_COMPLEX,0.4,(200,200,200),1
                         )
         return lamps
 
-    def __getPairError(self, this, other):
-        mat = self.mat
-        error = []
-        # y diff
-        error += [abs(this.y-other.y)]
-        # area diff
-        error += [abs(this.a - other.a)/this.a]
-        # greyscale
-        col_begin = this.x+this.w
-        col_stop = other.x
-        ROI_w = col_stop - col_begin
-        ROI_h = ROI_w
-        row_center = this.y+math.floor((other.y+other.h-this.y)/2)
-        row_begin = math.floor(row_center-ROI_h/2)
-        row_stop = math.floor(row_center+ROI_h/2)
-        if row_begin >= row_stop:
-            return error+[1]
-        if col_begin >= col_stop:
-            return error+[1]
-        ROI = mat[row_begin:row_stop,col_begin:col_stop]
-        ROI_thresh = cv2.threshold(ROI, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
-        pts = np.where(ROI_thresh == 255)
-        if not len(pts) == 2:
-            return error+[1]
-        error += [1-len(mat[pts[0],pts[1]])/ROI_w/ROI_w]
-        # width/height
-        ratio = (other.x+other.w-this.x)/(other.y+other.h-this.y+0.1)
-        print(ratio)
-        if ratio > 4.5 or ratio < 1.2:
-            error[2] = 1
-        return error
-
-    def pairLamps(self, draw=False, lamps=None, weights=None, passline=None):
-        # default parameters
+    def pairLamps(self, draw=False, lamps=None, weights=None):
+        # default weights
         if weights is None:
-            weights = [0.2,1,2]
-        if passline is None:
-            passline = 2.5
+            weights = [1,5]
         # find lamps
         if lamps is None:
             lamps = self.findLamps(draw)
@@ -200,25 +160,24 @@ class AimImageToolbox():
         pairs = []
         # pair score
         for i in range(0, len(lamps)-1):
-            pair_left = lamps[i]
-            pair_right = lamps[i]
-            error = passline
-            if not pair_left.paired:
+            lamp_left = lamps[i]
+            lamp_right = lamps[i]
+            pair_score = 10
+            if not lamp_left.paired:
                 for j in range(i+1, len(lamps)):
-                    _pair_right = lamps[j]
-                    if not _pair_right.paired:
-                        # calc error
-                        merror = np.array(self.__getPairError(pair_left,_pair_right)).T
-                        mweights = np.array(weights)
-                        _error = np.dot(merror,mweights)
-                        if _error < error:
-                            error = _error
-                            pair_right = _pair_right
-                            print('<<<')
-                if not pair_left == pair_right:
-                    pairs += [[pair_left,pair_right]]
-                    pair_left.paired = True
-                    pair_right.paired = True
+                    _lamp_right = lamps[j]
+                    if not _lamp_right.paired:
+                        # score
+                        score1 = abs(lamp_left.y-_lamp_right.y)
+                        score2 = abs(lamp_left.a - _lamp_right.a)/lamp_left.a
+                        _pair_score = score1*weights[0]+ score2*weights[1]
+                        if _pair_score<pair_score:
+                            pair_score = _pair_score
+                            lamp_right = _lamp_right
+                if not lamp_left == lamp_right:
+                    pairs += [[lamp_left,lamp_right]]
+                    lamp_left.paired = True
+                    lamp_right.paired = True
         # delete overlapping pair
         for i in range(0, len(pairs)-1):
             if i==len(pairs)-1:
@@ -230,6 +189,15 @@ class AimImageToolbox():
                     del pairs[i]
                     i = i-1
                     break
+        # delete lights above
+        del_pairs = []
+        for i in range(0, len(pairs)):
+            pair = pairs[i]
+            if pair[0].y/480<0.35:
+                del_pairs += [i]
+        for i in range(0, len(del_pairs)):
+            print(del_pairs[len(del_pairs)-1-i], len(pairs))
+            del pairs[del_pairs[len(del_pairs)-1-i]]
         # draw
         if draw:
             draw_mat = self.draw_mat
@@ -245,44 +213,25 @@ class AimImageToolbox():
 
 
 class AimMat(AimImageToolbox):
-
-    def __init__(self, img):
+    def __init__(self, img, drawConfig=None, areaRegion=None, lamp_weights=None, lamp_passline=None, pair_weights=None):
         super(AimMat,self).__init__(img)
-        #config
-        drawConfig = [False,False,False,True,True]
-        areaRegion = [32,3200]
-        lamp_weights = [1,0.5,1]
-        lamp_passline = 1.5
-        pair_weights = [0.1,1,2]
-        pair_passline = 2
-        #process
-        #thresh = self.preprocess(drawConfig[0])
+        if drawConfig is None or not len(drawConfig) == 5:
+            drawConfig = [False,False,False,False,True]
+        #self.preprocess(drawConfig[0])
         thresh = self.threshold(drawConfig[1])
         contours,rects = self.findContours(drawConfig[2], thresh, areaRegion)
         lamps = self.findLamps(drawConfig[3], contours, rects, lamp_weights, lamp_passline)
-        pairs = self.pairLamps(drawConfig[4], lamps, pair_weights, pair_passline)
-        self.__pairs = pairs
-
-    @property
-    def areas(self):
-        areas = []
-        for pair in self.__pairs:
-            left = pair[0]
-            right = pair[1]
-            areas += [(right.x-left.x-left.w)*(right.y+right.h-left.y)]
-        return areas
-
-    def __len__(self):
-        return len(self.__pairs)
+        pairs = self.pairLamps(drawConfig[4], lamps, pair_weights)
+        self.len = len(pairs)
 
 
 def runTest(test_index=0):
     tests = [
-        range(1, 7),  # basic
-        range(1, 56), # 40-56 for large armor
-        range(1, 38), # nightmare
-        range(1, 16), # static
-        range(1, 16), # drunk
+        range(1, 7),
+        range(1, 56),
+        range(1, 38),
+        range(1, 16),
+        range(1, 16),
         ]
     s = 0
     for i in tests[test_index]:
@@ -290,14 +239,12 @@ def runTest(test_index=0):
         print('test'+str(test_index)+'/img'+str_i+'.jpg' )
         autoaim = AimMat('../data/test'+str(test_index)+'/img'+str_i+'.jpg')
         autoaim.showoff('miao '*3)
-        print('  found: ',len(autoaim))
-        print('  areas: ',autoaim.areas)
-        s += len(autoaim)
+        s += autoaim.len
         if cv2.waitKey(0) & 0xFF == 27:
             break
-    print('Find '+str(s)+' pairs altogether.')
+    print('> Find '+str(s)+' pairs.')
     cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
-    runTest(0)
+    runTest(3)
