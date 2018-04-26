@@ -29,7 +29,7 @@ class AimImageToolbox():
     def __init__(self, img):
         if isinstance(img, str):
             self.src = cv2.imread(img)
-        elif isinstance(src_img,np.ndarray):
+        elif isinstance(img,np.ndarray):
             self.src = img
         else:
             print('not a opencv pic, f*cker!!')
@@ -94,10 +94,13 @@ class AimImageToolbox():
         error_greyscale = (255-greyscale)/35
         error += [0 if error_greyscale<0 else error_greyscale]
         error += [0 if rect[3]/rect[2]>1.5 else (1.5-rect[3]/rect[2])/1.5]
-        angle = ellipse[2]
-        error += [(0 if angle<15 else (angle-15)/75)
-            if angle<90 else
-            (0 if angle>165 else (165-angle)/75)]
+        if ellipse is None:
+            error += [0.5]
+        else:
+            angle = ellipse[2]
+            error += [(0 if angle<15 else (angle-15)/75)
+                if angle<90 else
+                (0 if angle>165 else (165-angle)/75)]
         return error
 
     def findLamps(self, draw=False, contours=None, rects=None, weights=None, passline=None):
@@ -127,8 +130,9 @@ class AimImageToolbox():
         for i in range(0, len(contours)):
             contour = contours[i]
             if len(contour)<6:
-                contour = contours[i-1]
-            ellipse = cv2.fitEllipse(contour)
+                ellipse = None
+            else:
+                ellipse = cv2.fitEllipse(contour)
             ellipses += [ellipse]
         # determine the lamp
         lamps = []
@@ -182,7 +186,6 @@ class AimImageToolbox():
         error += [1-len(mat[pts[0],pts[1]])/ROI_w/ROI_w]
         # width/height
         ratio = (other.x+other.w-this.x)/(other.y+other.h-this.y+0.1)
-        print(ratio)
         if ratio > 4.5 or ratio < 1.2:
             error[2] = 1
         return error
@@ -214,7 +217,6 @@ class AimImageToolbox():
                         if _error < error:
                             error = _error
                             pair_right = _pair_right
-                            print('<<<')
                 if not pair_left == pair_right:
                     pairs += [[pair_left,pair_right]]
                     pair_left.paired = True
@@ -272,6 +274,15 @@ class AimMat(AimImageToolbox):
             areas += [(right.x-left.x-left.w)*(right.y+right.h-left.y)]
         return areas
 
+    @property
+    def centers(self):
+        centers = []
+        for pair in self.__pairs:
+            left = pair[0]
+            right = pair[1]
+            centers += [(left.x+(right.x+right.w-left.x)/2, left.y+(right.y+right.h-left.y)/2)]
+        return centers
+
     def __len__(self):
         return len(self.__pairs)
 
@@ -292,8 +303,9 @@ def runTest(test_index=0):
         autoaim.showoff('miao '*3)
         print('  found: ',len(autoaim))
         print('  areas: ',autoaim.areas)
+        print('  centers: ',autoaim.centers)
         s += len(autoaim)
-        if cv2.waitKey(0) & 0xFF == 27:
+        if cv2.waitKey(0) == 27:
             break
     print('Find '+str(s)+' pairs altogether.')
     cv2.destroyAllWindows()
