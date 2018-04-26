@@ -1,2 +1,4 @@
 .DS_Store
-autoaim/__pycache__
+**/__pycache__
+data_experiment/*
+!.gitkeep

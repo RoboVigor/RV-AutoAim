@@ -59,7 +59,7 @@ class AimImageToolbox():
     def threshold(self, draw=False):
         mat = self.mat.copy()
         ret = cv2.threshold(mat, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[0]
-        thresh = cv2.threshold(mat, (255-ret)*0.15+ret, 255, cv2.THRESH_BINARY)[1]
+        thresh = cv2.threshold(mat, (255-ret)*0.5+ret, 255, cv2.THRESH_BINARY)[1]
         if draw:
             self.draw_mat = thresh
         return thresh
@@ -201,7 +201,6 @@ class AimImageToolbox():
             lamps = self.findLamps(draw)
         # pair the lamp
         pairs = []
-        # pair score
         for i in range(0, len(lamps)-1):
             pair_left = lamps[i]
             pair_right = lamps[i]
@@ -222,6 +221,7 @@ class AimImageToolbox():
                     pair_left.paired = True
                     pair_right.paired = True
         # delete overlapping pair
+        # bug here!!!!!!!!!!!!!!!!!!!!!!!!
         for i in range(0, len(pairs)-1):
             if i==len(pairs)-1:
                 break
@@ -255,20 +255,19 @@ class AimMat(AimImageToolbox):
         areaRegion = [32,3200]
         lamp_weights = [1,0.5,1]
         lamp_passline = 1.5
-        pair_weights = [0.1,1,2]
+        pair_weights = [0.1,1,3] # y diff;area diff; greyscale
         pair_passline = 2
         #process
         #thresh = self.preprocess(drawConfig[0])
         thresh = self.threshold(drawConfig[1])
         contours,rects = self.findContours(drawConfig[2], thresh, areaRegion)
-        lamps = self.findLamps(drawConfig[3], contours, rects, lamp_weights, lamp_passline)
-        pairs = self.pairLamps(drawConfig[4], lamps, pair_weights, pair_passline)
-        self.__pairs = pairs
+        self.lamps = self.findLamps(drawConfig[3], contours, rects, lamp_weights, lamp_passline)
+        self.pairs = self.pairLamps(drawConfig[4], self.lamps, pair_weights, pair_passline)
 
     @property
     def areas(self):
         areas = []
-        for pair in self.__pairs:
+        for pair in self.pairs:
             left = pair[0]
             right = pair[1]
             areas += [(right.x-left.x-left.w)*(right.y+right.h-left.y)]
@@ -277,14 +276,14 @@ class AimMat(AimImageToolbox):
     @property
     def centers(self):
         centers = []
-        for pair in self.__pairs:
+        for pair in self.pairs:
             left = pair[0]
             right = pair[1]
             centers += [(left.x+(right.x+right.w-left.x)/2, left.y+(right.y+right.h-left.y)/2)]
         return centers
 
     def __len__(self):
-        return len(self.__pairs)
+        return len(self.pairs)
 
 
 def runTest(test_index=0):
@@ -294,6 +293,7 @@ def runTest(test_index=0):
         range(1, 38), # nightmare
         range(1, 16), # static
         range(1, 16), # drunk
+        range(1, 15), # lab
         ]
     s = 0
     for i in tests[test_index]:
@@ -301,7 +301,8 @@ def runTest(test_index=0):
         print('test'+str(test_index)+'/img'+str_i+'.jpg' )
         autoaim = AimMat('../data/test'+str(test_index)+'/img'+str_i+'.jpg')
         autoaim.showoff('miao '*3)
-        print('  found: ',len(autoaim))
+        print('  found lamps: ',len(autoaim.lamps))
+        print('  found pairs: ',len(autoaim))
         print('  areas: ',autoaim.areas)
         print('  centers: ',autoaim.centers)
         s += len(autoaim)
@@ -312,4 +313,4 @@ def runTest(test_index=0):
 
 
 if __name__ == '__main__':
-    runTest(0)
+    runTest(5)
