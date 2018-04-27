@@ -221,7 +221,7 @@ class AimImageToolbox():
                     pair_left.paired = True
                     pair_right.paired = True
         # delete overlapping pair
-        # bug here!!!!!!!!!!!!!!!!!!!!!!!!
+        pairs_del = []
         for i in range(0, len(pairs)-1):
             if i==len(pairs)-1:
                 break
@@ -229,9 +229,11 @@ class AimImageToolbox():
             for j in range(i+1, len(pairs)):
                 right = pairs[j]
                 if left[1].x+left[1].w>right[1].x+right[1].w and right[0].y-left[0].y<25:
-                    del pairs[i]
-                    i = i-1
+                    pairs_del += [i]
                     break
+        pairs_del.reverse()
+        for i in pairs_del:
+            del pairs[i]
         # draw
         if draw:
             draw_mat = self.draw_mat

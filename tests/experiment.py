@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
+import sys
+sys.path.append('../')
 import numpy as np
 import cv2
-from autoaim import AimMat
+from autoaim.huaq import AimMat
 
 cap = cv2.VideoCapture(0) # 0 for computer camera; 1 for usb camera
 

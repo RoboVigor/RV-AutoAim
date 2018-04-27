@@ -1,12 +1,9 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
 import unittest
 import sys
 sys.path.append('../')
 import xml.etree.ElementTree as ET
-from autoaim.autoaim import AimMat
+from autoaim.huaq import AimMat
 
 
 class TestAutoaim(unittest.TestCase):
@@ -43,7 +40,7 @@ class TestAutoaim(unittest.TestCase):
         return lamp_labels, pair_labels
 
     def test_accuracy(self):
-        test_index = 1
+        test_index = 0
         tests = [
             range(1, 7),  # basic
             range(1, 56), # 40-56 for large armor
@@ -77,6 +74,7 @@ class TestAutoaim(unittest.TestCase):
             print('  found pairs: ',ds1,'/',len(pair_labels))
             print('  pairs marks:',marks)
         print('successfully paired: ',s1,'/',s2)
+
 
 if __name__ == '__main__':
     unittest.main()
