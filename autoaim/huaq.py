@@ -45,13 +45,13 @@ class AimImageToolbox():
         mat = self.mat.copy()
         mat=cv2.GaussianBlur(mat, (3, 3), 0, 0, cv2.BORDER_DEFAULT)
         mat=cv2.medianBlur(mat, 5)
-        mat = cv2.Sobel(mat, cv2.CV_8U, 1, 0,  ksize = 3)
+        mat = cv2.Sobel(mat, cv2.CV_8U, 1, 0, ksize = 3)
         ret3, mat = cv2.threshold(mat, 250, 255, cv2.THRESH_BINARY)
         element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 1))
         element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 6))
         mat = cv2.dilate(mat, element2, iterations = 1)
         mat = cv2.erode(mat, element1, iterations = 1)
-        mat = cv2.dilate(mat, element2,iterations = 1)
+        mat = cv2.dilate(mat, element2, iterations = 1)
         if draw:
             self.draw_mat = mat
         return mat
@@ -60,6 +60,8 @@ class AimImageToolbox():
         mat = self.mat.copy()
         ret = cv2.threshold(mat, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[0]
         thresh = cv2.threshold(mat, (255-ret)*0.5+ret, 255, cv2.THRESH_BINARY)[1]
+        print((255-ret)*0.5+ret)
+        #thresh = cv2.threshold(mat, 180, 255, cv2.THRESH_BINARY)[1]
         if draw:
             self.draw_mat = thresh
         return thresh
@@ -92,7 +94,7 @@ class AimImageToolbox():
     def __getLampError(self, greyscale, rect, ellipse):
         error = []
         error_greyscale = (255-greyscale)/35
-        error += [0 if error_greyscale<0 else error_greyscale]
+        error += [min(0, error_greyscale)]
         error += [0 if rect[3]/rect[2]>1.5 else (1.5-rect[3]/rect[2])/1.5]
         if ellipse is None:
             error += [0.5]
@@ -142,7 +144,7 @@ class AimImageToolbox():
             error = np.dot(merror, mweights)
             if error < passline:
                 lamp = Lamp(contours[i], rects[i], ellipses[i], greyscales[i], areas[i], error)
-                lamps += [lamp]
+                lamps += [lamp]#lamps.append(lamp)
         lamps.sort()
         # draw
         if draw:
@@ -193,7 +195,7 @@ class AimImageToolbox():
     def pairLamps(self, draw=False, lamps=None, weights=None, passline=None):
         # default parameters
         if weights is None:
-            weights = [0.2,1,2]
+            weights = [0.1,1,2]
         if passline is None:
             passline = 2.5
         # find lamps
@@ -253,7 +255,7 @@ class AimMat(AimImageToolbox):
     def __init__(self, img):
         super(AimMat,self).__init__(img)
         #config
-        drawConfig = [False,False,False,True,True]
+        drawConfig = [True,False,False,True,True]
         areaRegion = [32,3200]
         lamp_weights = [1,0.5,1]
         lamp_passline = 1.5
@@ -291,7 +293,7 @@ class AimMat(AimImageToolbox):
 def runTest(test_index=0):
     tests = [
         range(1, 7),  # basic
-        range(1, 56), # 40-56 for large armor
+        range(40, 56), # 40-56 for large armor
         range(1, 38), # nightmare
         range(1, 16), # static
         range(1, 16), # drunk
@@ -315,4 +317,4 @@ def runTest(test_index=0):
 
 
 if __name__ == '__main__':
-    runTest(2)
+    runTest(1)
