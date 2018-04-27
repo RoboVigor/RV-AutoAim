@@ -255,7 +255,7 @@ class AimMat(AimImageToolbox):
         areaRegion = [32,3200]
         lamp_weights = [1,0.5,1]
         lamp_passline = 1.5
-        pair_weights = [0.1,1,3] # y diff;area diff; greyscale
+        pair_weights = [0.1,1,2] # y diff;area diff; greyscale
         pair_passline = 2
         #process
         #thresh = self.preprocess(drawConfig[0])
@@ -313,4 +313,4 @@ def runTest(test_index=0):
 
 
 if __name__ == '__main__':
-    runTest(5)
+    runTest(2)
