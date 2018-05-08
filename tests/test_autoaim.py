@@ -67,16 +67,8 @@ class TestAutoaim(unittest.TestCase):
             print('  pairs marks:',marks)
         print('successfully paired: ',s1,'/',s2)
 
-    def test_findLamps(self):
-        lamps = self.autoaim.findLamps()
-        self.assertTrue(len(lamps)>=2)
-
-    def test_pairLamps(self):
-        pair_lamps = self.autoaim.pairLamps()
-        self.assertTrue(len(pair_lamps)==1)
-
     def test_accuracy(self):
-        self._autoTest(1)
+        self._autoTest(2)
         #pass
 '''
     def test_speed(self):

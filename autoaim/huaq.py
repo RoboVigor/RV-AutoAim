@@ -5,8 +5,7 @@ import math
 
 class Lamp():
 
-    def __init__(self, mat, contour, rect, ellipse, greyscale, area, error):
-        self.mat = mat
+    def __init__(self, contour, rect, ellipse, greyscale, area, error):
         self.contour = contour
         self.greyscale = greyscale
         self.ellipse = ellipse
@@ -94,9 +93,11 @@ class AimImageToolbox():
 
     def __getLampError(self, greyscale, rect, ellipse):
         error = []
-        error_greyscale = (255-greyscale)/35
-        error += [min(0, error_greyscale)]
+        # greyscale
+        error += [max(0, (255-greyscale)/35)]
+        # ratio
         error += [0 if rect[3]/rect[2]>1.5 else (1.5-rect[3]/rect[2])/1.5]
+        # ellipse
         if ellipse is None:
             error += [0.5]
         else:
@@ -104,6 +105,10 @@ class AimImageToolbox():
             error += [(0 if angle<15 else (angle-15)/75)
                 if angle<90 else
                 (0 if angle>165 else (165-angle)/75)]
+        #print('-----')
+        #print('greyscale:',greyscale)
+        #print('ratio:',rect[3]/rect[2])
+        #print('error:',error)
         return error
 
     def findLamps(self, draw=False, contours=None, rects=None, weights=None, passline=None):
@@ -144,7 +149,7 @@ class AimImageToolbox():
             mweights = np.array(weights)
             error = np.dot(merror, mweights)
             if error < passline:
-                lamp = Lamp(mat, contours[i], rects[i], ellipses[i], greyscales[i], areas[i], error)
+                lamp = Lamp(contours[i], rects[i], ellipses[i], greyscales[i], areas[i], error)
                 lamps += [lamp]#lamps.append(lamp)
         lamps.sort()
         # draw
@@ -258,9 +263,9 @@ class AimMat(AimImageToolbox):
         #config
         drawConfig = [True,False,False,True,True]
         areaRegion = [32,3200]
-        lamp_weights = [1,0.5,1]
+        lamp_weights = [1,0.5,1]# greyscale, area, ellipse
         lamp_passline = 1.5
-        pair_weights = [0.1,1,2] # y diff;area diff; greyscale
+        pair_weights = [0.1,1,2] # y diff, area diff, greyscale
         pair_passline = 2
         #process
         #thresh = self.preprocess(drawConfig[0])
@@ -293,12 +298,13 @@ class AimMat(AimImageToolbox):
 
 def runTest(test_index=0):
     tests = [
-        range(1, 7),  # basic
-        range(40, 56), # 40-56 for large armor
-        range(1, 38), # nightmare
-        range(1, 16), # static
-        range(1, 16), # drunk
-        range(1, 15), # lab
+        range(1, 7),   # 0.basic
+        range(40, 56), # 1.large armor in 40-56
+        range(1, 38),  # 2.nightmare
+        range(1, 16),  # 3.static
+        range(1, 16),  # 4.drunk
+        range(1, 15),  # 5.lab
+        range(1, 57),  # 6.look down
         ]
     s = 0
     for i in tests[test_index]:
@@ -318,4 +324,4 @@ def runTest(test_index=0):
 
 
 if __name__ == '__main__':
-    runTest(1)
+    runTest(0)
