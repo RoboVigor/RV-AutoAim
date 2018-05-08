@@ -5,8 +5,7 @@ import math
 
 class Lamp():
 
-    def __init__(self, mat, contour, rect, ellipse, greyscale, area, error):
-        self.mat = mat
+    def __init__(self, contour, rect, ellipse, greyscale, area, error):
         self.contour = contour
         self.greyscale = greyscale
         self.ellipse = ellipse
@@ -144,7 +143,7 @@ class AimImageToolbox():
             mweights = np.array(weights)
             error = np.dot(merror, mweights)
             if error < passline:
-                lamp = Lamp(mat, contours[i], rects[i], ellipses[i], greyscales[i], areas[i], error)
+                lamp = Lamp(contours[i], rects[i], ellipses[i], greyscales[i], areas[i], error)
                 lamps += [lamp]#lamps.append(lamp)
         lamps.sort()
         # draw
