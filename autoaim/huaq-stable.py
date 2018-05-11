@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 9/9 34/48 15/23
+# 9/9 37/48 18/23
 import cv2
 import numpy as np
 import math
@@ -61,7 +61,6 @@ class AimImageToolbox():
         mat = self.mat.copy()
         ret = cv2.threshold(mat, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[0]
         thresh = cv2.threshold(mat, (255-ret)*0.5+ret, 255, cv2.THRESH_BINARY)[1]
-        print((255-ret)*0.5+ret)
         #thresh = cv2.threshold(mat, 180, 255, cv2.THRESH_BINARY)[1]
         if draw:
             self.draw_mat = thresh
@@ -106,10 +105,6 @@ class AimImageToolbox():
             error += [(0 if angle<15 else (angle-15)/75)
                 if angle<90 else
                 (0 if angle>165 else (165-angle)/75)]
-        #print('-----')
-        #print('greyscale:',greyscale)
-        #print('ratio:',rect[3]/rect[2])
-        #print('error:',error)
         return error
 
     def findLamps(self, draw=False, contours=None, rects=None, weights=None, passline=None):
@@ -172,27 +167,31 @@ class AimImageToolbox():
         mat = self.mat
         error = []
         # y diff
-        error += [abs(this.y-other.y)]
+        error += [max(0,abs(this.y-other.y)/this.h-0.1)]
         # area diff
         error += [abs(this.a - other.a)/this.a]
         # greyscale
-        col_begin = this.x+this.w
-        col_stop = other.x
-        ROI_w = col_stop - col_begin
-        ROI_h = ROI_w
-        row_center = this.y+math.floor((other.y+other.h-this.y)/2)
-        row_begin = math.floor(row_center-ROI_h/2)
-        row_stop = math.floor(row_center+ROI_h/2)
+        row_begin = int((this.y+other.y)/2)
+        row_stop = int((this.y+this.h+other.y+other.h)/2)
+        roi_h = row_stop-row_begin
+        roi_w = roi_h
+        col_center = (this.x+this.w+other.x)/2
+        col_begin = int(col_center-roi_w/2)
+        col_stop = int(col_center+roi_w/2)
         if row_begin >= row_stop:
             return error+[1]
         if col_begin >= col_stop:
             return error+[1]
-        ROI = mat[row_begin:row_stop,col_begin:col_stop]
-        ROI_thresh = cv2.threshold(ROI, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
-        pts = np.where(ROI_thresh == 255)
-        if not len(pts) == 2:
-            return error+[1]
-        error += [1-len(mat[pts[0],pts[1]])/ROI_w/ROI_w]
+        roi = mat[row_begin:row_stop,col_begin:col_stop]
+        ret = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[0]
+        roi_thresh = cv2.threshold(roi, min(30,ret), 255, cv2.THRESH_BINARY)[1]
+        pts = np.where(roi_thresh == 255)
+        if not len(pts)==2:
+            error += [1]
+            return error
+        error += [max(0,(0.65-len(mat[pts[0],pts[1]])/roi.size)/0.65)]
+        #cv2.imshow('huaq', roi)
+        #cv2.waitKey(0)
         # width/height
         ratio = (other.x+other.w-this.x)/(other.y+other.h-this.y+0.1)
         if ratio > 4.5 or ratio < 1.2:
@@ -217,14 +216,14 @@ class AimImageToolbox():
             if not pair_left.paired:
                 for j in range(i+1, len(lamps)):
                     _pair_right = lamps[j]
-                    if not _pair_right.paired:
-                        # calc error
-                        merror = np.array(self.__getPairError(pair_left,_pair_right)).T
-                        mweights = np.array(weights)
-                        _error = np.dot(merror,mweights)
-                        if _error < error:
-                            error = _error
-                            pair_right = _pair_right
+                    #if not _pair_right.paired:
+                    # calc error
+                    merror = np.array(self.__getPairError(pair_left,_pair_right)).T
+                    mweights = np.array(weights)
+                    _error = np.dot(merror,mweights)
+                    if _error < error:
+                        error = _error
+                        pair_right = _pair_right
                 if not pair_left == pair_right:
                     pairs += [[pair_left,pair_right]]
                     pair_left.paired = True
@@ -237,7 +236,7 @@ class AimImageToolbox():
             left = pairs[i]
             for j in range(i+1, len(pairs)):
                 right = pairs[j]
-                if left[1].x+left[1].w>right[1].x+right[1].w and right[0].y-left[0].y<25:
+                if left[0].x<=right[0].x and left[1].x>=right[1].x and abs(right[0].y-left[0].y)<25:
                     pairs_del += [i]
                     break
         pairs_del.reverse()
@@ -262,12 +261,12 @@ class AimMat(AimImageToolbox):
     def __init__(self, img):
         super(AimMat,self).__init__(img)
         #config
-        drawConfig = [True,False,False,True,True]
+        drawConfig = [False,False,True,True,True]
         areaRegion = [32,3200]
         lamp_weights = [1,0.5,1]# greyscale, area, ellipse
         lamp_passline = 1.5
-        pair_weights = [0.1,1,2] # y diff, area diff, greyscale
-        pair_passline = 2
+        pair_weights = [2,1,3] # y diff, area diff, greyscale
+        pair_passline = 1.5
         #process
         #thresh = self.preprocess(drawConfig[0])
         thresh = self.threshold(drawConfig[1])
@@ -298,9 +297,10 @@ class AimMat(AimImageToolbox):
 
 
 def runTest(test_index=0):
+    cv2.waitKey(0)
     tests = [
         range(1, 7),   # 0.basic
-        range(40, 56), # 1.large armor in 40-56
+        range(1, 56), # 1.large armor in 40-56
         range(1, 38),  # 2.nightmare
         range(1, 16),  # 3.static
         range(1, 16),  # 4.drunk
@@ -313,10 +313,11 @@ def runTest(test_index=0):
         print('test'+str(test_index)+'/img'+str_i+'.jpg' )
         autoaim = AimMat('../data/test'+str(test_index)+'/img'+str_i+'.jpg')
         autoaim.showoff('miao '*3)
-        print('  found lamps: ',len(autoaim.lamps))
-        print('  found pairs: ',len(autoaim))
-        print('  areas: ',autoaim.areas)
-        print('  centers: ',autoaim.centers)
+        if False:
+            print('  found lamps: ',len(autoaim.lamps))
+            print('  found pairs: ',len(autoaim))
+            print('  areas: ',autoaim.areas)
+            print('  centers: ',autoaim.centers)
         s += len(autoaim)
         if cv2.waitKey(0) == 27:
             break
@@ -325,4 +326,4 @@ def runTest(test_index=0):
 
 
 if __name__ == '__main__':
-    runTest(0)
+    runTest(3)

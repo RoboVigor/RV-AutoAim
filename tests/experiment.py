@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 from autoaim.huaq import AimMat
 
-cap = cv2.VideoCapture(0) # 0 for computer camera; 1 for usb camera
+cap = cv2.VideoCapture(1) # 0 for computer camera; 1 for usb camera
 
 i = 0
 
@@ -14,7 +14,6 @@ while(True):
     #cv2.imshow('you', frame) # show source image
     autoaim = AimMat(frame)
     autoaim.showoff('miao '*3)
-
     if len(autoaim) > 0:
         dir = '../data_experiment/'
         key = str(i)
@@ -26,11 +25,10 @@ while(True):
         print('Area: ', autoaim.areas)
         print('Center: ', autoaim.centers)
         i += 1
-        if cv2.waitKey(0) & 0xFF == 27:
+        if cv2.waitKey(100) & 0xFF == 27:
                 break
     else:
         if cv2.waitKey(10) & 0xFF == 27:
-                break
-
+                    break
 cap.release()
 cv2.destroyAllWindows()

@@ -41,11 +41,13 @@ class TestAutoaim(unittest.TestCase):
         return lamp_labels, pair_labels
 
     def _autoTest(self, test_index):
-        s1 = 0
-        s2 = 0
+        s1 = 0 # successful pairs
+        s2 = 0 # total pairs labeled
+        s3 = 0 # total lamp found
         for i in self.tests[test_index]:
             str_i = '0'+str(i) if i<10 else str(i)
             autoaim = AimMat('../data/test'+str(test_index)+'/img'+str_i+'.jpg')
+            s3 += len(autoaim)
             lamp_labels, pair_labels = self._getLabel(test_index, str_i)
             s2 += len(pair_labels)
             marks = []
@@ -61,14 +63,20 @@ class TestAutoaim(unittest.TestCase):
                 marks += [mark]
             ds1 = min([ds1,len(pair_labels)])
             s1 += ds1
-            print('test'+str(test_index)+'/img'+str_i+'.jpg' )
+            #print('test'+str(test_index)+'/img'+str_i+'.jpg' )
             #print('  found lamps: ',len(autoaim.lamps),'/',len(lamp_labels))
-            print('  found pairs: ',ds1,'/',len(pair_labels))
-            print('  pairs marks:',marks)
-        print('successfully paired: ',s1,'/',s2)
+            #print('  found pairs: ',ds1,'/',len(pair_labels))
+            #print('  pairs marks:',marks)
+        print('test ',test_index)
+        print('  successfully paired: ',s1,'/',s2)
+        print('  found lamps:',s3)
 
-    def test_accuracy(self):
+    def test_accuracy1(self):
+        self._autoTest(1)
+    def test_accuracy2(self):
         self._autoTest(2)
+    def test_accuracy0(self):
+        self._autoTest(0)
         #pass
 '''
     def test_speed(self):
