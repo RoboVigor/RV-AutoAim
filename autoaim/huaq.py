@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 9/9 44/48 19/23
+# 9/9 44/48 18/23
 import cv2
 import numpy as np
 import math
@@ -94,11 +94,10 @@ class AimImageToolbox():
     def __getLampError(self, greyscale, rect):
         error = []
         # greyscale
-        #print(greyscale)
-        error += [max(0, (255-greyscale)/85)-1]
+        error += [max(0, (255-greyscale)/85-1)]
         # ratio
-        error += [0 if rect[3]/rect[2]>1.5 else (1.5-rect[3]/rect[2])/1.5]
-        #print(error)
+        error += [max(0,(2.5-rect[3]/rect[2])/2.5)]
+        #print(greyscale,rect[3]/rect[2])
         return error
 
     def findLamps(self, draw=False, contours=None, rects=None, weights=None, passline=None):
@@ -114,23 +113,13 @@ class AimImageToolbox():
         # calculate greyscale and area
         greyscales = []
         areas = []
-        self.t0 = 0
-        self.t1 = 0
         for i in range(0, len(contours)):
-            self.t0 -= time.clock()
             rect = rects[i]
             roi = mat[rect[1]:rect[1]+rect[3],rect[0]:rect[0]+rect[2]]
             greyscale = np.mean(roi)
-            self.t0 += time.clock()
-            self.t1 -= time.clock()
             test_area = cv2.contourArea(contours[i])
-            #mom = cv2.moments(contours[i])
-            #print(mom['m00'])
-            self.t1 += time.clock()
             greyscales += [greyscale]
-            #areas += [len(pts)]
             areas += [test_area+1]
-            #print(test_area,len(pts))
         # determine the lamp
         lamps = []
         for i in range(0, len(rects)):
@@ -171,16 +160,18 @@ class AimImageToolbox():
         col_center = (this.x+this.w+other.x)/2
         col_begin = int(col_center-roi_w/2)
         col_stop = int(col_center+roi_w/2)
-        if row_begin >= row_stop:
-            return error+[1]
-        if col_begin >= col_stop:
-            return error+[1]
         roi = mat[row_begin:row_stop,col_begin:col_stop]
-        greyscale = np.mean(roi)
-        error += [max(0,(140-greyscale)/140)]
+        if roi.size == 0:
+            error += [1]
+        else:
+            greyscale = np.mean(roi)
+            error += [max(0,(140-greyscale)/140)]
         # width/height
-        ratio = (other.x+other.w-this.x)/(other.y+other.h-this.y+0.1)
-        if ratio > 4.5 or ratio < 1.2:
+        if this.y >= other.y:
+            ratio = (other.x+other.w-this.x)/(this.y+this.h-other.y+0.1)
+        else:
+            ratio = (other.x+other.w-this.x)/(other.y+other.h-this.y+0.1)
+        if ratio > 3.5 or ratio < 1.2:
             error += [1] # boom
         else:
             error += [0]
@@ -197,10 +188,11 @@ class AimImageToolbox():
             lamps = self.findLamps(draw)
         # pair the lamp
         pairs = []
+        errors = []
         for i in range(0, len(lamps)-1):
             pair_left = lamps[i]
-            is_paired = False
             error = passline
+            is_paired = False
             if not pair_left.paired:
                 for j in range(i+1, len(lamps)):
                     _pair_right = lamps[j]
@@ -209,13 +201,14 @@ class AimImageToolbox():
                     mweights = np.array(weights)
                     _error = np.dot(merror,mweights)
                     if _error < error:
+                        is_paired = True
                         error = _error
                         pair_right = _pair_right
-                        is_paired = True
                 if is_paired:
                     pairs += [[pair_left,pair_right]]
                     pair_left.paired = True
                     pair_right.paired = True
+                    errors += [error]
         # delete overlapping pair
         pairs_del = []
         for i in range(0, len(pairs)-1):
@@ -241,6 +234,10 @@ class AimImageToolbox():
                         (right_lamp.x+right_lamp.w,right_lamp.y+right_lamp.h),
                         (255,255,0)
                     )
+                cv2.putText(draw_mat, str(round(errors[i],1)),
+                        (left_lamp.x,math.floor(left_lamp.y-5)),
+                        cv2.FONT_HERSHEY_COMPLEX,0.4,(255,255,0),1
+                        )
         return pairs
 
 
@@ -249,12 +246,13 @@ class AimMat(AimImageToolbox):
     def __init__(self, img):
         super(AimMat,self).__init__(img)
         #config
-        drawConfig = [False,False,True,True,True]
-        areaRegion = [10,3200]
+        drawConfig = [False,False,False,True,True]
+        areaRegion = [32,3200]
         lamp_passline = 1.5
         lamp_weights = [1,0.5]# greyscale, area
         pair_passline = 2.5
         pair_weights = [2,1,3,pair_passline] # y diff, area diff, greyscale，ratio
+        #2.5[2,1,3,pair_passline]
         #process
         thresh = self.preprocess(drawConfig[0])
         #thresh = self.threshold(drawConfig[1])
@@ -292,32 +290,26 @@ def runTest(test_index=0):
         range(1, 38),  # 2.nightmare
         range(1, 16),  # 3.static
         range(1, 16),  # 4.drunk
-        range(1, 15),  # 5.lab
-        range(1, 57),  # 6.look down
+        range(1, 13),  # 5.lab (bad env)
+        range(1, 23),  # 6.lab
         ]
     s = 0
-    s0 = 0
-    s1 = 0
     for i in tests[test_index]:
         str_i = '0'+str(i) if i<10 else str(i)
-        #print('test'+str(test_index)+'/img'+str_i+'.jpg' )
+        print('test'+str(test_index)+'/img'+str_i+'.jpg' )
         autoaim = AimMat('../data/test'+str(test_index)+'/img'+str_i+'.jpg')
         autoaim.showoff('miao '*3)
-        s0 += autoaim.t0
-        s1 += autoaim.t1
         if False:
             print('  found lamps: ',len(autoaim.lamps))
             print('  found pairs: ',len(autoaim))
             print('  areas: ',autoaim.areas)
             print('  centers: ',autoaim.centers)
         s += len(autoaim)
-        if cv2.waitKey(3000) == 27:
+        if cv2.waitKey(0) == 27:
             break
     print('Find '+str(s)+' pairs altogether.')
-    print('t0:',s0)
-    print('t1:',s1)
     cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
-    runTest(2)
+    runTest(0)

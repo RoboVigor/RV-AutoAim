@@ -12,12 +12,13 @@ class TestAutoaim(unittest.TestCase):
     def setUp(self):
         self.autoaim = AimMat('../data/test0/img01.jpg')
         self.tests = [
-            range(1, 7),  # basic
-            range(1, 56), # 40-56 for large armor
-            range(1, 38), # nightmare
-            range(1, 16), # static
-            range(1, 16), # drunk
-            range(1, 15), # lab
+            range(1, 7),   # 0.basic
+            range(1, 56), # 1.large armor in 40-56
+            range(1, 38),  # 2.nightmare
+            range(1, 16),  # 3.static
+            range(1, 16),  # 4.drunk
+            range(1, 13),  # 5.lab (bad env)
+            range(1, 23),  # 6.lab
             ]
 
     def _getLabel(self, test_index, str_i):
@@ -71,12 +72,9 @@ class TestAutoaim(unittest.TestCase):
         print('  successfully paired: ',s1,'/',s2)
         print('  found lamps:',s3)
 
-    def test_accuracy1(self):
-        self._autoTest(1)
-    def test_accuracy2(self):
-        self._autoTest(2)
-    def test_accuracy0(self):
-        self._autoTest(0)
+    def test_accuracy(self):
+        for i in range(0,7):
+            self._autoTest(i)
         #pass
 '''
     def test_speed(self):

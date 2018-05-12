@@ -326,4 +326,4 @@ def runTest(test_index=0):
 
 
 if __name__ == '__main__':
-    runTest(3)
+    runTest(0)

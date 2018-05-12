@@ -184,6 +184,7 @@ class AimImageToolbox():
             error += [1] # boom
         else:
             error += [0]
+        print(error)
         return error
 
     def pairLamps(self, draw=False, lamps=None, weights=None, passline=None):

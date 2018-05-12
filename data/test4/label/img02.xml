@@ -1,0 +1,26 @@
+<annotation>
+	<folder>test4</folder>
+	<filename>img02.jpg</filename>
+	<path>C:\Users\Tccoin\codes\ps\autoAim\data\test4\img02.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>480</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>pair</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>55</xmin>
+			<ymin>290</ymin>
+			<xmax>90</xmax>
+			<ymax>305</ymax>
+		</bndbox>
+	</object>
+</annotation>
