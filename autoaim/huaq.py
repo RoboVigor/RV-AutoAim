@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 9/9 37/48 18/23
+# 9/9 44/48 19/23
 import cv2
 import numpy as np
 import math
@@ -101,17 +101,6 @@ class AimImageToolbox():
         #print(error)
         return error
 
-    def _calcSth(self,mat, contour,rect):
-        '''ROI = np.zeros_like(mat)
-        cv2.drawContours(ROI, [contour], -1, color=255, thickness=-1)
-        pts = np.where(ROI == 255)
-        pts = mat[pts[0], pts[1]]
-        greyscale = sum(pts)/len(pts)'''
-        roi = mat[rect[1]:rect[1]+rect[3],rect[0]:rect[0]+rect[2]]
-        greyscale = np.mean(roi)
-        #print(greyscale)
-        return greyscale
-
     def findLamps(self, draw=False, contours=None, rects=None, weights=None, passline=None):
         # default parameters
         if weights is None:
@@ -129,7 +118,9 @@ class AimImageToolbox():
         self.t1 = 0
         for i in range(0, len(contours)):
             self.t0 -= time.clock()
-            greyscale= self._calcSth(mat,contours[i],rects[i])
+            rect = rects[i]
+            roi = mat[rect[1]:rect[1]+rect[3],rect[0]:rect[0]+rect[2]]
+            greyscale = np.mean(roi)
             self.t0 += time.clock()
             self.t1 -= time.clock()
             test_area = cv2.contourArea(contours[i])
@@ -185,23 +176,20 @@ class AimImageToolbox():
         if col_begin >= col_stop:
             return error+[1]
         roi = mat[row_begin:row_stop,col_begin:col_stop]
-        ret = cv2.threshold(roi, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[0]
-        roi_thresh = cv2.threshold(roi, min(30,ret), 255, cv2.THRESH_BINARY)[1]
-        pts = np.where(roi_thresh == 255)
-        if not len(pts)==2:
-            error += [1]
-            return error
-        error += [max(0,(0.65-len(mat[pts[0],pts[1]])/roi.size)/0.65)]
+        greyscale = np.mean(roi)
+        error += [max(0,(140-greyscale)/140)]
         # width/height
         ratio = (other.x+other.w-this.x)/(other.y+other.h-this.y+0.1)
         if ratio > 4.5 or ratio < 1.2:
-            error[2] = 1
+            error += [1] # boom
+        else:
+            error += [0]
         return error
 
     def pairLamps(self, draw=False, lamps=None, weights=None, passline=None):
         # default parameters
         if weights is None:
-            weights = [0.1,1,2]
+            weights = [0.1,1,2,passline]
         if passline is None:
             passline = 2.5
         # find lamps
@@ -263,10 +251,10 @@ class AimMat(AimImageToolbox):
         #config
         drawConfig = [False,False,True,True,True]
         areaRegion = [10,3200]
-        lamp_weights = [1,0.5]# greyscale, area
         lamp_passline = 1.5
-        pair_weights = [2,1,3] # y diff, area diff, greyscale
-        pair_passline = 1.5
+        lamp_weights = [1,0.5]# greyscale, area
+        pair_passline = 2.5
+        pair_weights = [2,1,3,pair_passline] # y diff, area diff, greyscale，ratio
         #process
         thresh = self.preprocess(drawConfig[0])
         #thresh = self.threshold(drawConfig[1])
@@ -332,4 +320,4 @@ def runTest(test_index=0):
 
 
 if __name__ == '__main__':
-    runTest(1)
+    runTest(2)
