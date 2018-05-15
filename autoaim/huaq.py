@@ -44,12 +44,12 @@ class AimImageToolbox():
 
     def preprocess(self, draw=False):
         mat = self.mat.copy()
-        mat=cv2.GaussianBlur(mat, (3, 3), 0, 0, cv2.BORDER_DEFAULT)
+        mat=cv2.GaussianBlur(mat, (3, 3), 0, mat, 0, cv2.BORDER_DEFAULT)
         mat=cv2.medianBlur(mat, 5)
         mat = cv2.Sobel(mat, cv2.CV_8U, 1, 0, ksize = 3)
         ret3, mat = cv2.threshold(mat, 250, 255, cv2.THRESH_BINARY)
         element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 1))
-        element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 6))
+        element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 5))
         mat = cv2.dilate(mat, element2, iterations = 1)
         mat = cv2.erode(mat, element1, iterations = 1)
         mat = cv2.dilate(mat, element2, iterations = 1)
@@ -88,7 +88,7 @@ class AimImageToolbox():
         # draw
         if draw:
             draw_mat = self.draw_mat
-            cv2.drawContours(draw_mat,possible_contours,-1,(0,0,255), 1)
+            cv2.drawContours(draw_mat,possible_contours,-1,(0,0,255), 2)
         return possible_contours, possible_rects
 
     def __getLampError(self, greyscale, rect):
@@ -119,7 +119,7 @@ class AimImageToolbox():
             greyscale = np.mean(roi)
             test_area = cv2.contourArea(contours[i])
             greyscales += [greyscale]
-            areas += [test_area+1]
+            areas += [test_area]
         # determine the lamp
         lamps = []
         for i in range(0, len(rects)):
@@ -200,6 +200,9 @@ class AimImageToolbox():
                     merror = np.array(self.__getPairError(pair_left,_pair_right)).T
                     mweights = np.array(weights)
                     _error = np.dot(merror,mweights)
+                    #print(pair_left.a,_pair_right.a)
+                    #print(merror)
+                    #print(error)
                     if _error < error:
                         is_paired = True
                         error = _error
@@ -232,7 +235,7 @@ class AimImageToolbox():
                 right_lamp = pair[1]
                 cv2.rectangle(draw_mat,(left_lamp.x,left_lamp.y),
                         (right_lamp.x+right_lamp.w,right_lamp.y+right_lamp.h),
-                        (255,255,0)
+                        (0,255,0), 3
                     )
                 cv2.putText(draw_mat, str(round(errors[i],1)),
                         (left_lamp.x,math.floor(left_lamp.y-5)),
@@ -251,7 +254,7 @@ class AimMat(AimImageToolbox):
         lamp_passline = 1.5
         lamp_weights = [1,0.5]# greyscale, area
         pair_passline = 2.5
-        pair_weights = [2,1,3,pair_passline] # y diff, area diff, greyscale，ratio
+        pair_weights = [2,1,3,2.5] # y diff, area diff, greyscale，ratio
         #2.5[2,1,3,pair_passline]
         #process
         thresh = self.preprocess(drawConfig[0])
