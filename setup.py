@@ -10,7 +10,7 @@ with open('LICENSE') as f:
 setup(
     name='AutoAim',
     version='2.0.1',
-    description='Autoaim scripts for RoboMaster',
+    description='A project for detecting armors.',
     author='FuXing PS',
     author_email='robovigor@gmail.com',
     license=license,
