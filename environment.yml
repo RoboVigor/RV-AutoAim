@@ -1,0 +1,8 @@
+name: test-env
+channels:
+  - defaults
+dependencies:
+  - numpy=1.15.2
+  - opencv=3.3.0
+  - pip:
+    - pyserial==3.4

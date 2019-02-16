@@ -3,11 +3,8 @@ python:
   - "3.3"
   - "3.4"
   - "3.5"
-  - "3.5-dev"  # 3.5 development branch
   - "3.6"
-  - "3.6-dev"  # 3.6 development branch
-  - "3.7-dev"  # 3.7 development branch
-# command to install dependencies
+  - "3.7"
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
@@ -16,7 +13,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create --file freeze.yml -q -n test-env python=$TRAVIS_PYTHON_VERSION
+  - conda env create --file freeze.yml python=$TRAVIS_PYTHON_VERSION
   - source activate test-env
 # command to run tests
 script:
