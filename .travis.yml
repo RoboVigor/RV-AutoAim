@@ -13,8 +13,10 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda env create --file environment.yml python=$TRAVIS_PYTHON_VERSION
+  - conda env create --file environment.yml
   - source activate test-env
+  - conda install -n test-env python=$TRAVIS_PYTHON_VERSION
+  - pip install -r requirements.txt
 # command to run tests
 script:
   - pytest
