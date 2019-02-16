@@ -13,7 +13,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda env create --file freeze.yml python=$TRAVIS_PYTHON_VERSION
+  - conda env create --file environment.yml python=$TRAVIS_PYTHON_VERSION
   - source activate test-env
 # command to run tests
 script:
