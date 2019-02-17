@@ -4,7 +4,14 @@
 
 再一次开始。
 
-## Usage
+## Install
+
+```bash
+conda env create --file environment.yml
+source activate cv
+conda install -n cv python=3.6
+pip install -r requirements.txt
+```
 
 ## Specification
 
