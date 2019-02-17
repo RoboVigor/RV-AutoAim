@@ -7,7 +7,7 @@
 ## Install
 
 ```bash
-conda env create -n cv numpy opencv python=$TRAVIS_PYTHON_VERSION
+conda create -n cv numpy opencv python=3.6
 source activate cv
 pip install -r requirements.txt
 ```
