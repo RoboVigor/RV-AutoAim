@@ -11,9 +11,8 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda env create --file environment.yml
-  - source activate test-env
-  - conda install -n test-env python=$TRAVIS_PYTHON_VERSION
+  - conda env create -n cv numpy opencv python=$TRAVIS_PYTHON_VERSION
+  - source activate cv
   - pip install -r requirements.txt
 # command to run tests
 script:
