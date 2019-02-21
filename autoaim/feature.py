@@ -34,12 +34,9 @@ class Lamp(object):
 
 class Feature():
     __default_config = {
-        # input
         'preferred_channel': 1,  # (b,g,r)
         'preprocess': True,
-        # filter
         'rect_area_threshold': (32, 4096),
-        # weight
     }
 
     def __init__(self, img, **config):
@@ -94,6 +91,12 @@ class Feature():
         return [x.bounding_rect for x in self.__lamps]
 
     @property
+    def rotated_rects(self):
+        if not self.has_calculated('rotated_rects'):
+            self.calc_rotated_rects()
+        return [x.rotated_rect for x in self.__lamps]
+
+    @property
     def ellipses(self):
         if not self.has_calculated('ellipses'):
             self.calc_ellipses()
@@ -132,8 +135,8 @@ class Feature():
         mat = cv2.medianBlur(mat, 5)
         mat = cv2.Sobel(mat, cv2.CV_8U, 1, 0, ksize=3)
         _, mat = cv2.threshold(mat, 250, 255, cv2.THRESH_BINARY)
-        element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 1))
-        element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 6))
+        # element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 1))
+        # element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 6))
         # mat = cv2.dilate(mat, element2, iterations=1)
         # mat = cv2.erode(mat, element1, iterations=1)
         # mat = cv2.dilate(mat, element2, iterations=1)
@@ -176,6 +179,14 @@ class Feature():
         lamps = [x for x in lamps if x.bounding_rect_area in threshold]
         self.__lamps = lamps
         self.__set_calculated('bounding_rects')
+        return lamps
+
+    def calc_rotated_rects(self):
+        '''lamp.contour -> lamp.rotated_rect'''
+        lamps = self.lamps
+        for lamp in lamps:
+            lamp.rotated_rect = cv2.minAreaRect(lamp.contour)
+        self.__set_calculated('rotated_rects')
         return lamps
 
     def calc_greyscales_and_point_areas(self, binary_mat=None):
@@ -221,7 +232,15 @@ class Feature():
         rects = self.bounding_rects
         for rect in rects:
             x, y, w, h = rect
-            cv2.rectangle(img, (x, y), (x+w, y+h), (200, 200, 200), 2)
+            cv2.rectangle(img, (x, y), (x+w, y+h), (200, 0, 200), 2)
+        return img
+
+    def draw_rotated_rects(self, img):
+        rects = self.rotated_rects
+        for rect in rects:
+            box = cv2.boxPoints(rect)
+            box = np.int0(box)
+            cv2.drawContours(img, [box], 0, (200, 200, 0), 1)
         return img
 
     def draw_ellipses(self, img):
@@ -247,12 +266,16 @@ class Feature():
 
 
 if __name__ == '__main__':
-    img = helpers.load('data/test0/img01.jpg')
-    feature = Feature(img)
-    print('find {} contours'.format(len(feature.contours)))
-    pipe(img.copy(),
-         feature.draw_contours,
-         feature.draw_ellipses,
-         feature.draw_texts()('point_area'),
-         helpers.showoff
-         )
+    for i in range(1, 20):
+        img = helpers.load('data/test5/img0'+str(i)+'.jpg')
+        feature = Feature(img)
+        print('find {} contours'.format(len(feature.contours)))
+        pipe(img.copy(),
+             feature.draw_contours,
+             #  feature.draw_bounding_rects,
+             feature.draw_rotated_rects,
+             #  feature.draw_ellipses,
+             feature.draw_texts()('point_area'),
+             #  feature.draw_texts()('greyscale'),
+             helpers.showoff
+             )
