@@ -12,6 +12,31 @@ source activate cv
 pip install -r requirements.txt
 ```
 
+### Usage
+
+```python
+from autoaim import *
+
+# load an image
+img = helpers.load('data/test0/img02.jpg')
+
+# show the image
+helpers.showoff(img)
+
+# extract features
+feature = Feature(img)
+print('find {} contours'.format(len(feature.contours)))
+pipe(img.copy(),
+     feature.draw_contours,
+     #  feature.draw_bounding_rects,
+     feature.draw_rotated_rects,
+     #  feature.draw_ellipses,
+     feature.draw_texts()('point_area'),
+     #  feature.draw_texts()('greyscale'),
+     helpers.showoff
+     )
+```
+
 ## Specification
 
 ## 帧结构
