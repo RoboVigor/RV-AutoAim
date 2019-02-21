@@ -1,9 +1,35 @@
 # -*- coding: utf-8 -*-
-# reference: check https://docs.opencv.org/3.3.0/dd/d49/tutorial_py_contour_features.html
+"""Feature Extraction Module
 
+This module loads an image and extract the vision feature from it.
+
+Reference:
+    check https://docs.opencv.org/3.3.0/dd/d49/tutorial_py_contour_features.html
+
+Author:
+    tccoin
+"""
+
+
+import collections
 import cv2
 import numpy as np
-from . import helpers
+from toolz import pipe, curry
+from autoaim import helpers
+
+
+class Lamp(object):
+    def __init__(self, contour):
+        super(Lamp, self).__setattr__('data', {'contour': contour})
+
+    def __setattr__(self, name, value):
+        self.data[name] = value
+
+    def __getattr__(self, attr):
+        try:
+            return self.data[attr]
+        except KeyError:
+            raise AttributeError
 
 
 class Feature():
@@ -14,15 +40,20 @@ class Feature():
         # filter
         'rect_area_threshold': (32, 4096),
         # weight
-        # debug
-        'debug_contours': True
     }
 
     def __init__(self, img, **config):
         """receive a image with rgb channel"""
+
+        # save the original img
         self.__src = img
+
+        # update the config
         self.__config = self.__default_config.copy()
         self.__config.update(config)
+
+        # set up the calculated values
+        self.__calculated = []
 
         # split the channels
         channels = cv2.split(self.__src)
@@ -30,14 +61,72 @@ class Feature():
 
         # preprocess
         if self.__config['preferred_channel']:
-            self.mat = self.__preprocess(preferred_channel)
+            self.mat = self.apply_preprocess(preferred_channel)
         else:
             self.mat = preferred_channel
 
-        # debug
-        self.debug_mat = self.mat.copy()
+    # ===================
+    # Property
+    # ===================
 
-    def __preprocess(self, mat):
+    @property
+    def binary_mat(self):
+        if not self.has_calculated('binary_mat'):
+            self.__binary_mat = self.apply_binarization(self.mat.copy())
+        return self.__binary_mat
+
+    @property
+    def lamps(self):
+        if not self.has_calculated('lamps'):
+            self.calc_contours()
+        return self.__lamps
+
+    @property
+    def contours(self):
+        if not self.has_calculated('contours'):
+            self.calc_contours()
+        return [x.contour for x in self.__lamps]
+
+    @property
+    def bounding_rects(self):
+        if not self.has_calculated('bounding_rects'):
+            self.calc_bounding_rects()
+        return [x.bounding_rect for x in self.__lamps]
+
+    @property
+    def ellipses(self):
+        if not self.has_calculated('ellipses'):
+            self.calc_ellipses()
+        return [x.ellipse for x in self.__lamps]
+
+    @property
+    def greyscales(self):
+        if not self.has_calculated('greyscales'):
+            self.calc_greyscales_and_point_areas()
+        return [x.greyscale for x in self.__lamps]
+
+    @property
+    def point_areas(self):
+        if not self.has_calculated('point_areas'):
+            self.calc_greyscales_and_point_areas()
+        return [x.point_area for x in self.__lamps]
+
+    # ===================
+    # Helpers
+    # ===================
+
+    def has_calculated(self, prop):
+        return prop in self.__calculated
+
+    def __set_calculated(self, prop):
+        self.__calculated.append(prop)
+
+    # ===================
+    # "apply" Function
+    # mat->mat
+    # ===================
+
+    def apply_preprocess(self, mat):
         mat = mat.copy()
         mat = cv2.GaussianBlur(mat, (3, 3), 0, 0, cv2.BORDER_DEFAULT)
         mat = cv2.medianBlur(mat, 5)
@@ -45,129 +134,125 @@ class Feature():
         _, mat = cv2.threshold(mat, 250, 255, cv2.THRESH_BINARY)
         element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 1))
         element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 6))
-        mat = cv2.dilate(mat, element2, iterations=1)
-        mat = cv2.erode(mat, element1, iterations=1)
-        mat = cv2.dilate(mat, element2, iterations=1)
+        # mat = cv2.dilate(mat, element2, iterations=1)
+        # mat = cv2.erode(mat, element1, iterations=1)
+        # mat = cv2.dilate(mat, element2, iterations=1)
         return mat
 
-    @property
-    def binary_mat(self):
-        if not hasattr(self, '__binary_mat'):
-            self.__calc_binary_mat()
-        return self.__binary_mat
-
-    def __calc_binary_mat(self):
-        mat = self.mat.copy()
+    def apply_binarization(self, mat):
         ret = cv2.threshold(mat, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[0]
         binary_mat = cv2.threshold(mat, (255-ret)*0.5+ret,
                                    255, cv2.THRESH_BINARY)[1]
-        self.__binary_mat = binary_mat
+        self.__set_calculated('binary_mat')
+        return binary_mat
 
-    @property
-    def contours(self):
-        if not hasattr(self, '__contours'):
-            self.__calc_contours()
-        return self.__contours
+    # ===================
+    # "calc" Function
+    # mat->value
+    # ===================
 
-    @property
-    def rects(self):
-        if not hasattr(self, '__rects'):
-            self.__calc_contours()
-        return self.__rects
-
-    @property
-    def rect_areas(self):
-        if not hasattr(self, '__rect_areas'):
-            self.__calc_contours()
-        return self.__rect_areas
-
-    def __calc_contours(self):
-        '''
-        @todo add a method to calc contours
-        @todo replace boundingRect with minAreaRect
-        '''
-        rect_area_threshold = self.__config['rect_area_threshold']
-        binary_mat = self.binary_mat
-        # find contours
-        all_contours = cv2.findContours(
+    def calc_contours(self, binary_mat=None):
+        '''binary_mat -> lamps, contours'''
+        if binary_mat is None:
+            binary_mat = self.binary_mat
+        contours = cv2.findContours(
             binary_mat, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
-        # filter contours
-        contours = []
-        rects = []
-        rect_areas = []
-        for contour in all_contours:
-            rect = cv2.boundingRect(contour)
+        lamps = [Lamp(x) for x in contours]
+        self.__lamps = lamps
+        self.__set_calculated('lamps')
+        self.__set_calculated('contours')
+        return lamps
+
+    def calc_bounding_rects(self):
+        '''lamp.contour -> lamp.bounding_rect, lamp.bounding_rect_area'''
+        lamps = self.lamps
+        for lamp in lamps:
+            rect = cv2.boundingRect(lamp.contour)
             x, y, w, h = rect
-            rect_area = w * h
-            if rect_area > rect_area_threshold[0] and rect_area < rect_area_threshold[1]:
-                contours.append(contour)
-                rects.append(rect)
-                rect_areas.append(rect_area)
-        # debug
-        if self.__config['debug_contours']:
-            debug_mat = self.debug_mat
-            cv2.drawContours(debug_mat, all_contours, -1, (0, 0, 150), 1)
-            cv2.drawContours(debug_mat, contours, -1, (0, 0, 255), 2)
-        # save
-        self.__contours = contours
-        self.__rects = rects
-        self.__rect_areas = rect_areas
+            area = int(w * h)
+            lamp.bounding_rect = rect
+            lamp.bounding_rect_area = area
+        threshold = range(*self.__config['rect_area_threshold'])
+        lamps = [x for x in lamps if x.bounding_rect_area in threshold]
+        self.__lamps = lamps
+        self.__set_calculated('bounding_rects')
+        return lamps
 
-    @property
-    def greyscales(self):
-        if not hasattr(self, '__greyscales'):
-            self.__calc_greyscales_and_point_areas()
-        return self.__greyscales
-
-    @property
-    def point_areas(self):
-        if not hasattr(self, '__point_areas'):
-            self.__calc_greyscales_and_point_areas()
-        return self.__point_areas
-
-    def __calc_greyscales_and_point_areas(self):
-        mat = self.mat
-        contours = self.contours
-        # calc
-        greyscales = []
-        point_areas = []
-        for contour in contours:
-            roi = np.zeros_like(mat)
-            cv2.drawContours(roi, [contour], -1, color=255, thickness=-1)
+    def calc_greyscales_and_point_areas(self, binary_mat=None):
+        '''binary_mat -> lamp.greyscale, lamp.point_areas
+            @todo reduce the size of roi to bounding rect
+        '''
+        if binary_mat is None:
+            binary_mat = self.binary_mat
+        lamps = self.lamps
+        for lamp in lamps:
+            roi = np.zeros_like(binary_mat)
+            cv2.drawContours(roi, [lamp.contour], -1, color=255, thickness=-1)
             pts = np.where(roi == 255)
-            pts = mat[pts[0], pts[1]]
+            pts = binary_mat[pts[0], pts[1]]
             point_area = len(pts)
             greyscale = sum(pts) / point_area
-            greyscales.append(greyscale)
-            point_areas.append(point_area)
-        # save
-        self.__greyscales = greyscales
-        self.__point_areas = point_areas
+            lamp.point_area = point_area
+            lamp.greyscale = greyscale
+        self.__set_calculated('greyscales')
+        self.__set_calculated('point_areas')
+        return lamps
 
-    @property
-    def ellipses(self):
-        if not hasattr(self, '__ellipses'):
-            self.__calc_ellipses()
-        return self.__ellipses
+    def calc_ellipses(self):
+        '''lamp.contour -> lamp.ellipse'''
+        lamps = self.lamps
+        lamps = [x for x in lamps if len(x.contour) >= 6]
+        for lamp in lamps:
+            lamp.ellipse = cv2.fitEllipse(lamp.contour)
+        self.__lamps = lamps
+        self.__set_calculated('ellipses')
+        return lamps
 
-    def __calc_ellipses(self):
+    # ===================
+    # "draw" Function
+    # ===================
+
+    def draw_contours(self, img):
         contours = self.contours
-        # calc
-        ellipses = []
-        for contour in contours:
-            if len(contour) < 6:
-                ellipse = None
-            else:
-                ellipse = cv2.fitEllipse(contour)
-            ellipses += [ellipse]
-        # save
-        self.__ellipses = ellipses
+        cv2.drawContours(img, contours, -1, (0, 0, 150), 1)
+        return img
+
+    def draw_bounding_rects(self, img):
+        rects = self.bounding_rects
+        for rect in rects:
+            x, y, w, h = rect
+            cv2.rectangle(img, (x, y), (x+w, y+h), (200, 200, 200), 2)
+        return img
+
+    def draw_ellipses(self, img):
+        ellipses = self.ellipses
+        for ellipse in ellipses:
+            cv2.ellipse(img, ellipse, (0, 255, 0), 2)
+        return img
+
+    def draw_texts(self):
+        '''Usage:feature.draw_texts()('greyscale')'''
+        def draw(prop, img):
+            lamps = self.lamps
+            getattr(self, 'bounding_rects')
+            getattr(self, prop+'s')
+            for lamp in lamps:
+                x, y, w, h = lamp.bounding_rect
+                cv2.putText(img, str(getattr(lamp, prop, '')),
+                            (x, int(y+h+15)),
+                            cv2.FONT_HERSHEY_PLAIN, 1.2, (200, 200, 200), 1
+                            )
+            return img
+        return curry(draw)
 
 
 if __name__ == '__main__':
-    img = helpers.load('data/test0/img02.jpg')
+    img = helpers.load('data/test0/img01.jpg')
     feature = Feature(img)
-    print(feature.rect_areas)
-    print(feature.greyscales)
-    print(feature.ellipses)
-    helpers.showoff(feature.binary_mat)
+    print('find {} contours'.format(len(feature.contours)))
+    pipe(img.copy(),
+         feature.draw_contours,
+         feature.draw_ellipses,
+         feature.draw_texts()('point_area'),
+         helpers.showoff
+         )
