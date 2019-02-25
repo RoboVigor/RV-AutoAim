@@ -19,10 +19,13 @@ def load(img):
 
 
 def showoff(img):
-    """an easy way to show image"""
+    """an easy way to show image, return `exit`"""
     cv2.imshow('showoff', img)
-    cv2.waitKey(0)
+    key = cv2.waitKey(0)
     cv2.destroyAllWindows()
+    if key == 27:
+        return True
+    return False
 
 
 def time_this(original_function):
