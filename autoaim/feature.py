@@ -15,7 +15,7 @@ import collections
 import cv2
 import numpy as np
 from toolz import pipe, curry
-from autoaim import helpers
+from autoaim import *
 
 
 class Lamp(object):
@@ -57,7 +57,7 @@ class Feature():
         preferred_channel = channels[self.__config['preferred_channel']]
 
         # preprocess
-        if self.__config['preferred_channel']:
+        if self.__config['preprocess']:
             self.mat = self.apply_preprocess(preferred_channel)
         else:
             self.mat = preferred_channel
@@ -266,7 +266,7 @@ class Feature():
 
 
 if __name__ == '__main__':
-    for i in range(1, 20):
+    for i in range(1, 5):
         img = helpers.load('data/test5/img0'+str(i)+'.jpg')
         feature = Feature(img)
         print('find {} contours'.format(len(feature.contours)))
