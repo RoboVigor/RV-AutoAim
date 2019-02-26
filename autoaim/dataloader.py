@@ -9,92 +9,70 @@ Author:
 
 import os
 import csv
+import math
 import xml.etree.ElementTree as ET
 import cv2
 import numpy as np
 from toolz import pipe, curry
-from autoaim import *
+from autoaim import Feature, helpers
 
 data_path = os.path.abspath(__file__ + '/../../data')
 
 
+def sigmoid(x):
+    return 1 / (1 + math.exp(-x))
+
+
 class DataLoader():
-    '''@todo: finish implementation of __calcdict'''
+    ''' @todo: finish implementation of __calcdict
+        @todo: rotated_rect_angle have some problems
+    '''
     __calcdict = {
         'contour': {
             'contour_len': lambda x: len(x)
         },
         'bounding_rect': {
-            'bounding_rect_w': lambda x: x[0],
-            'bounding_rect_y': lambda x: x[1],
-            'bounding_rect_ratio': lambda x: x[0]/x[1] if x[1] else 0
+            # 'bounding_rect_w': lambda x: x[0],
+            # 'bounding_rect_y': lambda x: x[1],
+            'bounding_rect_ratio': lambda x: (x[0]/x[1])/50 if x[1] else 0,
+            'bounding_rect_ratio_square': lambda x: pow((x[0]/x[1])/50, 2) if x[1] else 0
+        },
+        'rotated_rect': {
+            'rotated_rect_angle': lambda x: -x[2]/90,
+        },
+        'greyscale': {
+            'greyscale': lambda x: x/255,
+        },
+        'point_area': {
+            'point_area': lambda x: x,
         },
         'bingo': {
             'bingo': lambda x: int(x),
         },
     }
 
-    def __init__(self, datasets, feature_bucket, csv_filename, debug=False):
+    def __init__(self, csv_filename, debug=False):
+        self.csv_path = data_path + '/' + csv_filename
+        self.debug = debug
+
+    def load_datasets(self, datasets, feature_bucket):
         '''Example input:
         datasets = ['test0', 'test1', ...]
         feature_bucket = ['contour', 'bounding_rect', ...]
         '''
         self.feature_bucket = feature_bucket
-        self.csv_filename = csv_filename
-        self.debug = debug
         for dataset in datasets:
             self.load_dataset(dataset)
 
     def load_dataset(self, dataset):
         dataset_path = data_path+'/'+dataset
         files = os.listdir(dataset_path)
-        self.new()
+        self.new_csv()
         for file in files:
             file_path = dataset_path+'/'+file
             if os.path.isfile(file_path):
                 if self.load_img(dataset, file):
                     break
-
-    def load_img(self, dataset, file):
-        '''return `exit`'''
-        # load labels
-        labeled_lamps, labeled_pairs = self.load_label(dataset, file)
-        # load features
-        img_path = os.path.join(data_path, dataset, file)
-        img = helpers.load(img_path)
-        # close preprocess to get more lamps
-        feature = Feature(img, preprocess=False)
-        lamps = feature.lamps
-        for feature_name in self.feature_bucket:
-            getattr(feature, feature_name+'s', '')
-        # label the real-time feature
-        for lamp in lamps:
-            lamp.bingo = False
-            for labeled_lamp in labeled_lamps:
-                if self.is_in(lamp.bounding_rect, labeled_lamp):
-                    lamp.bingo = True
-                    break
-        self.save(feature)
-        if self.debug:
-            exit = pipe(img.copy(),
-                        # feature.draw_contours,
-                        feature.draw_bounding_rects,
-                        self.draw_labeled_lamps()(labeled_lamps),
-                        self.draw_bingo_lamps()(feature),
-                        helpers.showoff
-                        )
-            return exit
-        else:
-            return False
-
-    def is_in(self, rect, labeled_rect):
-        margin = 15
-        x, y, w, h = rect
-        diff = abs(np.array([x, x+w, y, y+h]) - np.array(labeled_rect))
-        if len(np.where(diff > margin)[0]) == 0:
-            return True
-        else:
-            return False
 
     def load_label(self, dataset, file):
         label = os.path.splitext(file)[0]
@@ -119,22 +97,48 @@ class DataLoader():
                     pairs.append(rect)
         return lamps, pairs
 
-    def new(self):
-        csv_filename = self.csv_filename
-        with open(data_path + '/'+csv_filename, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile, delimiter=' ',
-                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(self.calc_row())
+    def load_img(self, dataset, file):
+        '''return `exit`'''
+        # load labels
+        labeled_lamps, labeled_pairs = self.load_label(dataset, file)
+        # load image
+        img_path = os.path.join(data_path, dataset, file)
+        img = helpers.load(img_path)
+        # calc features
+        feature = Feature(img)
+        feature.bounding_rects, feature.point_areas
+        for feature_name in self.feature_bucket:
+            getattr(feature, feature_name+'s', '')
+        lamps = feature.lamps
+        # label the real-time feature
+        for lamp in lamps:
+            lamp.bingo = False
+            for labeled_lamp in labeled_lamps:
+                if self.__is_in(lamp.bounding_rect, labeled_lamp):
+                    lamp.bingo = True
+                    break
+        print('{}/{}: {} lamps'.format(dataset, file, len(lamps)))
+        self.append_csv(feature)
+        if self.debug:
+            exit = pipe(img.copy(),
+                        # feature.draw_contours,
+                        feature.draw_bounding_rects,
+                        self.draw_labeled_lamps()(labeled_lamps),
+                        self.draw_bingo_lamps()(feature),
+                        helpers.showoff
+                        )
+            return exit
+        else:
+            return False
 
-    def save(self, feature):
-        csv_filename = self.csv_filename
-        with open(data_path + '/'+csv_filename, 'a', newline='') as csvfile:
-            writer = csv.writer(csvfile, delimiter=' ',
-                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            for lamp in feature.lamps:
-                writer.writerow(self.calc_row(lamp))
+    def __is_in(self, rect, labeled_rect):
+        margin = 15
+        x, y, w, h = rect
+        diff = abs(np.array([x, x+w, y, y+h]) - np.array(labeled_rect))
+        return len(np.where(diff > margin)[0]) == 0
 
-    def calc_row(self, lamp=None):
+    def generate_csv_row(self, lamp=None):
+        '''This method works together with calcdict.'''
         calcdict = self.__calcdict
         row = []
         if lamp is None:
@@ -147,6 +151,30 @@ class DataLoader():
                     for func in calcdict[feature_name].values():
                         row.append(func(getattr(lamp, feature_name)))
         return row
+
+    def new_csv(self):
+        '''Create a new scv file and write the table's header to it.'''
+        with open(self.csv_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=' ',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            row = self.generate_csv_row()
+            writer.writerow(row)
+
+    def append_csv(self, feature):
+        with open(self.csv_path, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=' ',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            for lamp in feature.lamps:
+                row = self.generate_csv_row(lamp)
+                writer.writerow(row)
+
+    def read_csv(self):
+        with open(self.csv_path, 'r') as csvfile:
+            rows = [*csv.reader(csvfile)]
+            header = rows[:1][0][0].split(' ')
+            table = [[float(item) for item in row[0].split(' ')]
+                     for row in rows[1:]]
+            return header, table
 
     def draw_bingo_lamps(self):
         '''Usage:dataloader.draw_bingo_lamps()(feature)'''
@@ -180,11 +208,13 @@ if __name__ == '__main__':
         # 'test1',
     ]
     feature_bucket = [
-        'contour',
+        # 'contour',
         'bounding_rect',
         'rotated_rect',
         'greyscale',
-        'point_area',
+        # 'point_area',
         'bingo'
     ]
-    dataloader = DataLoader(datasets, feature_bucket, 'test.csv', debug=True)
+    dataloader = DataLoader('test.csv', debug=False)
+    dataloader.load_datasets(datasets, feature_bucket)
+    print(dataloader.read_csv())
