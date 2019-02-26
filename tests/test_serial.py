@@ -3,12 +3,13 @@ import unittest
 import os
 import serial
 import serial.tools.list_ports
-from .context import autoaim
+import autoaim
 
 data1 = [87, 16, 0, 6, 0, 88]
 port_list = list(serial.tools.list_ports.comports())
 
 isTravis = bool(os.environ.get('TRAVIS_PYTHON_VERSION'))
+
 
 class SerialTestSuite(unittest.TestCase):
 

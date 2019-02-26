@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .context import autoaim
+import autoaim
 
 import unittest
 
