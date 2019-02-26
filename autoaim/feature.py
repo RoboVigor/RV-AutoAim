@@ -15,7 +15,7 @@ import collections
 import cv2
 import numpy as np
 from toolz import pipe, curry
-from autoaim import *
+from autoaim import helpers
 
 
 class Lamp(object):
