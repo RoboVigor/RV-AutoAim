@@ -36,7 +36,8 @@ class Feature():
     __default_config = {
         'preferred_channel': 1,  # (b,g,r)
         'preprocess': True,
-        'rect_area_threshold': (32, 4096),
+        'rect_area_threshold': (16, 2048),
+        'point_area_threshold': (8, 1024),
     }
 
     def __init__(self, img, **config):
@@ -131,10 +132,9 @@ class Feature():
 
     def apply_preprocess(self, mat):
         mat = mat.copy()
-        mat = cv2.GaussianBlur(mat, (3, 3), 0, 0, cv2.BORDER_DEFAULT)
-        mat = cv2.medianBlur(mat, 5)
-        mat = cv2.Sobel(mat, cv2.CV_8U, 1, 0, ksize=3)
-        _, mat = cv2.threshold(mat, 250, 255, cv2.THRESH_BINARY)
+        mat = cv2.GaussianBlur(mat, (5, 5), 0, 0, cv2.BORDER_DEFAULT)
+        # mat = cv2.Sobel(mat, cv2.CV_8U, 1, 0, ksize=3)
+        # _, mat = cv2.threshold(mat, 250, 255, cv2.THRESH_BINARY)
         # element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 1))
         # element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 6))
         # mat = cv2.dilate(mat, element2, iterations=1)
@@ -143,9 +143,11 @@ class Feature():
         return mat
 
     def apply_binarization(self, mat):
-        ret = cv2.threshold(mat, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[0]
-        binary_mat = cv2.threshold(mat, (255-ret)*0.5+ret,
-                                   255, cv2.THRESH_BINARY)[1]
+        # ret = cv2.threshold(mat, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[0]
+        # binary_mat = cv2.threshold(mat, (255-ret)*0.5+ret,255, cv2.THRESH_BINARY)[1]
+        ret = cv2.threshold(mat, 0, 255, cv2.THRESH_OTSU)[0]
+        binary_mat = cv2.threshold(
+            mat, (255-ret)*0.5+ret, 255, cv2.THRESH_BINARY)[1]
         self.__set_calculated('binary_mat')
         return binary_mat
 
@@ -189,22 +191,25 @@ class Feature():
         self.__set_calculated('rotated_rects')
         return lamps
 
-    def calc_greyscales_and_point_areas(self, binary_mat=None):
-        '''binary_mat -> lamp.greyscale, lamp.point_areas
+    def calc_greyscales_and_point_areas(self, mat=None):
+        '''mat -> lamp.greyscale, lamp.point_areas
             @todo reduce the size of roi to bounding rect
         '''
-        if binary_mat is None:
-            binary_mat = self.binary_mat
+        if mat is None:
+            mat = self.mat.copy()
         lamps = self.lamps
         for lamp in lamps:
-            roi = np.zeros_like(binary_mat)
+            roi = np.zeros_like(mat)
             cv2.drawContours(roi, [lamp.contour], -1, color=255, thickness=-1)
             pts = np.where(roi == 255)
-            pts = binary_mat[pts[0], pts[1]]
+            pts = mat[pts[0], pts[1]]
             point_area = len(pts)
             greyscale = sum(pts) / point_area
             lamp.point_area = point_area
             lamp.greyscale = greyscale
+        threshold = range(*self.__config['point_area_threshold'])
+        lamps = [x for x in lamps if x.point_area in threshold]
+        self.__lamps = lamps
         self.__set_calculated('greyscales')
         self.__set_calculated('point_areas')
         return lamps
@@ -215,7 +220,6 @@ class Feature():
         lamps = [x for x in lamps if len(x.contour) >= 6]
         for lamp in lamps:
             lamp.ellipse = cv2.fitEllipse(lamp.contour)
-        self.__lamps = lamps
         self.__set_calculated('ellipses')
         return lamps
 
@@ -240,7 +244,7 @@ class Feature():
         for rect in rects:
             box = cv2.boxPoints(rect)
             box = np.int0(box)
-            cv2.drawContours(img, [box], 0, (200, 200, 0), 1)
+            cv2.drawContours(img, [box], 0, (0, 200, 200), 2)
         return img
 
     def draw_ellipses(self, img):
@@ -267,15 +271,18 @@ class Feature():
 
 if __name__ == '__main__':
     for i in range(1, 5):
-        img = helpers.load('data/test5/img0'+str(i)+'.jpg')
-        feature = Feature(img)
+        img = helpers.load('data/test0/img0'+str(i)+'.jpg')
+        feature = Feature(img, point_area_threshold=(10, 1024))
+        pipe(
+            # img.copy(),
+            feature.mat.copy(),
+            # feature.binary_mat.copy(),
+            #  feature.draw_contours,
+            feature.draw_bounding_rects,
+            feature.draw_rotated_rects,
+            #  feature.draw_ellipses,
+            feature.draw_texts()('point_area'),
+            #  feature.draw_texts()('greyscale'),
+            helpers.showoff
+        )
         print('find {} contours'.format(len(feature.contours)))
-        pipe(img.copy(),
-             feature.draw_contours,
-             #  feature.draw_bounding_rects,
-             feature.draw_rotated_rects,
-             #  feature.draw_ellipses,
-             feature.draw_texts()('point_area'),
-             #  feature.draw_texts()('greyscale'),
-             helpers.showoff
-             )
