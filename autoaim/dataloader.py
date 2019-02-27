@@ -34,8 +34,7 @@ class DataLoader():
         'bounding_rect': {
             # 'bounding_rect_w': lambda x: x[0],
             # 'bounding_rect_y': lambda x: x[1],
-            'bounding_rect_ratio': lambda x: (x[0]/x[1])/50 if x[1] else 0,
-            'bounding_rect_ratio_square': lambda x: pow((x[0]/x[1])/50, 2) if x[1] else 0
+            'bounding_rect_ratio': lambda x: (x[0]/x[1]) if x[1] else 0
         },
         'rotated_rect': {
             'rotated_rect_angle': lambda x: -x[2]/90,
@@ -61,13 +60,13 @@ class DataLoader():
         feature_bucket = ['contour', 'bounding_rect', ...]
         '''
         self.feature_bucket = feature_bucket
+        self.new_csv()
         for dataset in datasets:
             self.load_dataset(dataset)
 
     def load_dataset(self, dataset):
         dataset_path = data_path+'/'+dataset
         files = os.listdir(dataset_path)
-        self.new_csv()
         for file in files:
             file_path = dataset_path+'/'+file
             if os.path.isfile(file_path):
@@ -81,7 +80,8 @@ class DataLoader():
         try:
             tree = ET.ElementTree(file=label_path)
         except:
-            raise Exception('Label file "{}"  not found!'.format(label_path))
+            print('>  Label file "{}"  not found!'.format(label_path))
+            return None
         root = tree.getroot()
         lamps = []
         pairs = []
@@ -100,7 +100,11 @@ class DataLoader():
     def load_img(self, dataset, file):
         '''return `exit`'''
         # load labels
-        labeled_lamps, labeled_pairs = self.load_label(dataset, file)
+        labels = self.load_label(dataset, file)
+        if labels is None:
+            return False
+        else:
+            labeled_lamps, labeled_pairs = labels
         # load image
         img_path = os.path.join(data_path, dataset, file)
         img = helpers.load(img_path)
@@ -203,18 +207,23 @@ class DataLoader():
 
 
 if __name__ == '__main__':
-    datasets = [
-        'test0',
-        # 'test1',
-    ]
     feature_bucket = [
-        # 'contour',
+        'contour',
         'bounding_rect',
         'rotated_rect',
         'greyscale',
-        # 'point_area',
+        'point_area',
         'bingo'
+    ]
+    datasets = [
+        # 'test0',
+        'test5',
+        'test6',
+    ]
+    dataloader = DataLoader('train.csv', debug=False)
+    dataloader.load_datasets(datasets, feature_bucket)
+    datasets = [
+        'test0',
     ]
     dataloader = DataLoader('test.csv', debug=False)
     dataloader.load_datasets(datasets, feature_bucket)
-    print(dataloader.read_csv())
