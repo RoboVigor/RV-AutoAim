@@ -1,7 +1,7 @@
 <annotation>
 	<folder>test6</folder>
 	<filename>img21.jpg</filename>
-	<path>C:\Users\Tccoin\codes\ps\autoAim\data\test6\img21.jpg</path>
+	<path>/home/link/Codes/RV-AutoAim/data/test6/img21.jpg</path>
 	<source>
 		<database>Unknown</database>
 	</source>
@@ -21,6 +21,42 @@
 			<ymin>267</ymin>
 			<xmax>373</xmax>
 			<ymax>319</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>lamp</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>356</xmin>
+			<ymin>279</ymin>
+			<xmax>374</xmax>
+			<ymax>318</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>lamp</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>308</xmin>
+			<ymin>264</ymin>
+			<xmax>316</xmax>
+			<ymax>298</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>lamp</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>476</xmin>
+			<ymin>269</ymin>
+			<xmax>491</xmax>
+			<ymax>315</ymax>
 		</bndbox>
 	</object>
 </annotation>
