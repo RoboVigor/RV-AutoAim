@@ -174,7 +174,7 @@ class DataLoader():
 
     def read_csv(self):
         with open(self.csv_path, 'r') as csvfile:
-            rows = [*csv.reader(csvfile)]
+            rows = list(csv.reader(csvfile))
             header = rows[:1][0][0].split(' ')
             table = [[float(item) for item in row[0].split(' ')]
                      for row in rows[1:]]
