@@ -7,8 +7,8 @@
 ## Install
 
 ```bash
-conda create -n cv numpy opencv python=3.6
-source activate cv
+conda create -n cv numpy opencv pytorch torchvision cudatoolkit=9.0 python=3.6
+conda activate cv
 pip install -r requirements.txt
 ```
 
