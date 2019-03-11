@@ -18,11 +18,12 @@ def load(img):
     return src
 
 
-def showoff(img):
+def showoff(img, timeout=0, update=False):
     """an easy way to show image, return `exit`"""
     cv2.imshow('showoff', img)
-    key = cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    key = cv2.waitKey(timeout)
+    if not update:
+        cv2.destroyAllWindows()
     if key == 27:
         return True
     return False
