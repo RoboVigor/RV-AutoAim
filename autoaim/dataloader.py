@@ -66,12 +66,11 @@ class DataLoader():
 
     def load_dataset(self, dataset):
         dataset_path = data_path+'/'+dataset
-        files = os.listdir(dataset_path)
+        files = sorted([x for x in os.listdir(dataset_path)
+                        if os.path.isfile(dataset_path+'/'+x)])
         for file in files:
-            file_path = dataset_path+'/'+file
-            if os.path.isfile(file_path):
-                if self.load_img(dataset, file):
-                    break
+            if self.load_img(dataset, file):
+                break
 
     def load_label(self, dataset, file):
         label = os.path.splitext(file)[0]

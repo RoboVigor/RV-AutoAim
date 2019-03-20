@@ -65,5 +65,5 @@ def time_all_class_methods(Cls):
 
 
 if __name__ == '__main__':
-    img = load('data/test0/img02.jpg')
+    img = load('data/test0/img2.jpg')
     showoff(img)

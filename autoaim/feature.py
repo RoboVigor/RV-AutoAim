@@ -34,17 +34,18 @@ class Lamp(object):
 
 class Feature():
     __default_config = {
-        'preferred_channel': 1,  # (b,g,r)
-        'preprocess': True,
-        'rect_area_threshold': (16, 2048),
-        'point_area_threshold': (8, 1024),
+        'channel': lambda c: cv2.subtract(c[2], c[0]),  # (b,g,r)
+        'threshold': lambda t: t,
+        'preprocess': False,
+        'rect_area_threshold': (64, 2048),
+        'point_area_threshold': (16, 2048),
     }
 
     def __init__(self, img, **config):
         """receive a image with rgb channel"""
 
         # save the original img
-        self.__src = img
+        self.src = img
 
         # update the config
         self.__config = self.__default_config.copy()
@@ -54,14 +55,14 @@ class Feature():
         self.__calculated = []
 
         # split the channels
-        channels = cv2.split(self.__src)
-        preferred_channel = channels[self.__config['preferred_channel']]
+        channels = cv2.split(self.src)
+        channel = self.__config['channel'](channels)
 
         # preprocess
         if self.__config['preprocess']:
-            self.mat = self.apply_preprocess(preferred_channel)
+            self.mat = self.apply_preprocess(channel)
         else:
-            self.mat = preferred_channel
+            self.mat = channel
 
     # ===================
     # Property
@@ -143,11 +144,9 @@ class Feature():
         return mat
 
     def apply_binarization(self, mat):
-        # ret = cv2.threshold(mat, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[0]
-        # binary_mat = cv2.threshold(mat, (255-ret)*0.5+ret,255, cv2.THRESH_BINARY)[1]
         ret = cv2.threshold(mat, 0, 255, cv2.THRESH_OTSU)[0]
-        binary_mat = cv2.threshold(
-            mat, (255-ret)*0.5+ret, 255, cv2.THRESH_BINARY)[1]
+        t = self.__config['threshold'](ret)
+        binary_mat = cv2.threshold(mat, t, 255, cv2.THRESH_BINARY)[1]
         self.__set_calculated('binary_mat')
         return binary_mat
 
@@ -155,6 +154,10 @@ class Feature():
     # "calc" Function
     # mat->value
     # ===================
+
+    def calc(self, props):
+        for prop in props:
+            getattr(self, prop)
 
     def calc_contours(self, binary_mat=None):
         '''binary_mat -> lamps, contours'''
@@ -254,14 +257,13 @@ class Feature():
         return img
 
     def draw_texts(self):
-        '''Usage:feature.draw_texts()('greyscale')'''
-        def draw(prop, img):
+        '''Usage:feature.draw_texts()(lambda x: x.point_area)'''
+        def draw(key, img):
             lamps = self.lamps
             getattr(self, 'bounding_rects')
-            getattr(self, prop+'s')
             for lamp in lamps:
                 x, y, w, h = lamp.bounding_rect
-                cv2.putText(img, str(getattr(lamp, prop, '')),
+                cv2.putText(img, str(key(lamp)),
                             (x, int(y+h+15)),
                             cv2.FONT_HERSHEY_PLAIN, 1.2, (200, 200, 200), 1
                             )
@@ -270,19 +272,40 @@ class Feature():
 
 
 if __name__ == '__main__':
-    for i in range(1, 5):
-        img = helpers.load('data/test0/img0'+str(i)+'.jpg')
-        feature = Feature(img, point_area_threshold=(10, 1024))
-        pipe(
+    for i in range(1, 200, 1):
+        img_url = 'data/test7/img'+str(i)+'.jpg'
+        print('Load {}'.format(img_url))
+        img = helpers.load(img_url)
+
+        # for old database
+        # feature = Feature(img,
+        #   preprocess=False,
+        #   channel=lambda c: c[1],
+        #   threshold=lambda t: (255-t)*0.5+t)
+
+        # for new database
+        feature = Feature(img)
+
+        feature.calc([
+            'contours',
+            'bounding_rects',
+            'rotated_rects',
+            # 'ellipses',
+            'greyscales',
+            'point_areas',
+        ])
+        exit = pipe(
             # img.copy(),
             feature.mat.copy(),
             # feature.binary_mat.copy(),
-            #  feature.draw_contours,
-            feature.draw_bounding_rects,
-            feature.draw_rotated_rects,
+            # feature.draw_contours,
+            # feature.draw_bounding_rects,
+            # feature.draw_rotated_rects,
             #  feature.draw_ellipses,
-            feature.draw_texts()('point_area'),
-            #  feature.draw_texts()('greyscale'),
+            # feature.draw_texts()(lambda x: int(x.rotated_rect[2])),
+            feature.draw_texts()(lambda x: int(x.bounding_rect_area)),
             helpers.showoff
         )
-        print('find {} contours'.format(len(feature.contours)))
+        print('   find {} contours'.format(len(feature.contours)))
+        if exit:
+            break
