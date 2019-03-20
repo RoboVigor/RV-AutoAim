@@ -1,6 +1,7 @@
 cd data
-wget https://github.com/RoboVigor/RV-AutoAim-Data/archive/v2.4.0.zip
-unzip v2.4.0.zip
-mv RV-AutoAim-Data-2.4.0/data/* .
-rm RV-AutoAim-Data-2.4.0 -rf
-rm v2.4.0.zip
+rm test?/ -rf
+wget https://github.com/RoboVigor/RV-AutoAim-Data/archive/2.4.1.zip
+unzip 2.4.1.zip
+mv RV-AutoAim-Data-2.4.1/data/* .
+rm RV-AutoAim-Data-2.4.1 -rf
+rm 2.4.1.zip
