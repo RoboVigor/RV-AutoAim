@@ -14,6 +14,7 @@ install:
   - conda create -n cv numpy opencv python=$TRAVIS_PYTHON_VERSION
   - source activate cv
   - pip install -r requirements.txt
+  - bash install.sh
 # command to run tests
 script:
   - python -m unittest discover
