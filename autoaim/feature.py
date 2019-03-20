@@ -33,13 +33,6 @@ class Lamp(object):
 
 
 class Feature():
-    __default_config = {
-        'channel': lambda c: cv2.subtract(c[2], c[0]),  # (b,g,r)
-        'threshold': lambda t: t,
-        'preprocess': False,
-        'rect_area_threshold': (64, 2048),
-        'point_area_threshold': (16, 2048),
-    }
 
     def __init__(self, img, **config):
         """receive a image with rgb channel"""
@@ -48,24 +41,25 @@ class Feature():
         self.src = img
 
         # update the config
-        self.__config = self.__default_config.copy()
-        self.__config.update(config)
+        self.config = self.__default_config.copy()
+        self.config.update(config)
 
         # set up the calculated values
         self.__calculated = []
 
         # split the channels
         channels = cv2.split(self.src)
-        channel = self.__config['channel'](channels)
+        channel = self.config['channel'](channels)
 
         # preprocess
-        if self.__config['preprocess']:
+        if self.config['preprocess']:
             self.mat = self.apply_preprocess(channel)
         else:
             self.mat = channel
 
     # ===================
     # Property
+    # Mainly for debug
     # ===================
 
     @property
@@ -145,7 +139,7 @@ class Feature():
 
     def apply_binarization(self, mat):
         ret = cv2.threshold(mat, 0, 255, cv2.THRESH_OTSU)[0]
-        t = self.__config['threshold'](ret)
+        t = self.config['threshold'](ret)
         binary_mat = cv2.threshold(mat, t, 255, cv2.THRESH_BINARY)[1]
         self.__set_calculated('binary_mat')
         return binary_mat
@@ -156,8 +150,17 @@ class Feature():
     # ===================
 
     def calc(self, props):
+        # calc the props
         for prop in props:
-            getattr(self, prop)
+            getattr(self, prop, None)
+        # calc the features
+        for lamp in self.lamps:
+            x = {}
+            for prop in props:
+                for x_key in calcdict.get(prop, []):
+                    func = calcdict[prop][x_key]
+                    x[x_key] = func(lamp)
+            lamp.x = x
 
     def calc_contours(self, binary_mat=None):
         '''binary_mat -> lamps, contours'''
@@ -172,15 +175,15 @@ class Feature():
         return lamps
 
     def calc_bounding_rects(self):
-        '''lamp.contour -> lamp.bounding_rect, lamp.bounding_rect_area'''
+        '''lamp.contour -> lamp.bounding_rect, lamp.bounding_rect_area, lamp.bounding_rect_ratio'''
         lamps = self.lamps
         for lamp in lamps:
             rect = cv2.boundingRect(lamp.contour)
             x, y, w, h = rect
-            area = int(w * h)
             lamp.bounding_rect = rect
-            lamp.bounding_rect_area = area
-        threshold = range(*self.__config['rect_area_threshold'])
+            lamp.bounding_rect_area = int(w * h)
+            lamp.bounding_rect_ratio = w/h
+        threshold = range(*self.config['rect_area_threshold'])
         lamps = [x for x in lamps if x.bounding_rect_area in threshold]
         self.__lamps = lamps
         self.__set_calculated('bounding_rects')
@@ -190,7 +193,10 @@ class Feature():
         '''lamp.contour -> lamp.rotated_rect'''
         lamps = self.lamps
         for lamp in lamps:
-            lamp.rotated_rect = cv2.minAreaRect(lamp.contour)
+            rect = cv2.minAreaRect(lamp.contour)
+            lamp.rotated_rect = rect
+            _, (w, h), a = rect
+            lamp.rotated_rect_angle = a+180 if w > h else a+90
         self.__set_calculated('rotated_rects')
         return lamps
 
@@ -210,7 +216,7 @@ class Feature():
             greyscale = sum(pts) / point_area
             lamp.point_area = point_area
             lamp.greyscale = greyscale
-        threshold = range(*self.__config['point_area_threshold'])
+        threshold = range(*self.config['point_area_threshold'])
         lamps = [x for x in lamps if x.point_area in threshold]
         self.__lamps = lamps
         self.__set_calculated('greyscales')
@@ -270,10 +276,42 @@ class Feature():
             return img
         return curry(draw)
 
+    __default_config = {
+        'channel': lambda c: cv2.subtract(c[2], c[0]),  # (b,g,r)
+        'threshold': lambda t: t,
+        'preprocess': False,
+        'rect_area_threshold': (64, 4096),
+        'point_area_threshold': (16, 4096),
+    }
+
+
+calcdict = {
+    'bounding_rects': {
+        'bounding_rect_ratio': lambda l: l.bounding_rect_ratio
+    },
+    'rotated_rects': {
+        'rotated_rect_angle': lambda l: abs(l.rotated_rect_angle-90)/90,
+    },
+    'greyscales': {
+        'greyscale': lambda l: l.greyscale/255,
+    },
+    'point_areas': {
+        'point_area': lambda l: l.point_area/2048,
+    }
+}
+
+enabled_props = [
+    'contours',
+    'bounding_rects',
+    'rotated_rects',
+    'greyscales',
+    'point_areas',
+]
+
 
 if __name__ == '__main__':
-    for i in range(1, 200, 1):
-        img_url = 'data/test7/img'+str(i)+'.jpg'
+    for i in range(44, 50, 1):
+        img_url = 'data/test7/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
 
@@ -296,14 +334,16 @@ if __name__ == '__main__':
         ])
         exit = pipe(
             # img.copy(),
-            feature.mat.copy(),
-            # feature.binary_mat.copy(),
+            # feature.mat.copy(),
+            feature.binary_mat.copy(),
             # feature.draw_contours,
-            # feature.draw_bounding_rects,
+            feature.draw_bounding_rects,
             # feature.draw_rotated_rects,
             #  feature.draw_ellipses,
-            # feature.draw_texts()(lambda x: int(x.rotated_rect[2])),
-            feature.draw_texts()(lambda x: int(x.bounding_rect_area)),
+            feature.draw_texts()(
+                # lambda l: '{:.2f}'.format(l.bounding_rect_area)
+                lambda l: '{:.3f}'.format(l.x['point_area'])
+            ),
             helpers.showoff
         )
         print('   find {} contours'.format(len(feature.contours)))

@@ -19,10 +19,11 @@ bash install.sh
 from autoaim import *
 
 # load an image
-img = helpers.load('data/test0/img02.jpg')
+img = helpers.load('../data/test7/img1.jpg')
 
-# show the image
-helpers.showoff(img)
+# make the prediction
+predictor = Predictor('weight.csv')
+predictor.predict(img, mode='red')
 
 # extract features
 feature = Feature(img)
