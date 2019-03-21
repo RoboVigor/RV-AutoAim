@@ -28,9 +28,9 @@ class Predictor():
         w = self.w
         if mode == 'red':
             feature = Feature(img)
-        else if mode == 'blue':
+        elif mode == 'blue':
             feature = Feature(img, channel=lambda c: cv2.subtract(c[0], c[2]))
-        else if mode == 'old':
+        elif mode == 'old':
             feature = Feature(img,
                               preprocess=False,
                               channel=lambda c: c[1],
