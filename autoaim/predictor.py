@@ -51,10 +51,10 @@ class Predictor():
 
 
 if __name__ == '__main__':
-    for i in range(0, 250, 5):
+    for i in range(0, 250, 1):
         img_url = 'data/test7/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
 
         predictor = Predictor('weight.csv')
-        predictor.predict(img, red=True)
+        predictor.predict(img, mode='red')
