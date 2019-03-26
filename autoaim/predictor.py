@@ -11,7 +11,7 @@ Author:
 import math
 import cv2
 import numpy as np
-from autoaim import helpers, Feature, DataLoader, pipe
+from autoaim import helpers, feature, Feature, DataLoader, pipe
 
 
 def sigmoid(x):
@@ -26,24 +26,35 @@ class Predictor():
 
     def predict(self, img, mode='red'):
         w = self.w
+        calcdict = feature.calcdict
+        # modes
         if mode == 'red':
-            feature = Feature(img)
+            f = Feature(img)
         elif mode == 'blue':
-            feature = Feature(img, channel=lambda c: cv2.subtract(c[0], c[2]))
+            f = Feature(img, channel=lambda c: cv2.subtract(c[0], c[2]))
         elif mode == 'old':
-            feature = Feature(img,
-                              preprocess=False,
-                              channel=lambda c: c[1],
-                              threshold=lambda t: (255-t)*0.5+t)
-        feature.calc(self.props)
-        for lamp in feature.lamps:
-            x = np.array([x for x in lamp.x.values()] + [1])
+            f = Feature(img,
+                        preprocess=False,
+                        channel=lambda c: c[1],
+                        threshold=lambda t: (255-t)*0.5+t)
+        f.calc(self.props)
+        # get x_keys
+        x_keys = []
+        for prop in self.props:
+            for x_key in calcdict.get(prop, []):
+                x_keys += [x_key]
+        # get x and calc y
+        for lamp in f.lamps:
+            x = np.array([lamp.x[k] for k in x_keys] + [1])
             lamp.y = sigmoid(x.dot(w))
+            print(x)
+        # debug
         pipe(
             # img.copy(),
-            feature.mat.copy(),
-            feature.draw_bounding_rects,
-            feature.draw_texts()(
+            f.mat.copy(),
+            f.draw_bounding_rects,
+            f.draw_texts()(
+                # lambda l: '{:.2f}'.format(l.point_area)
                 lambda l: '{:.2f}'.format(l.y)
             ),
             helpers.showoff
