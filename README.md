@@ -13,7 +13,7 @@ conda activate cv
 pip install -r requirements.txt
 bash install.sh
 # install developing requirements
-conda install jupyterlab xeus-cling -c conda-forge
+conda install jupyterlab -c conda-forge
 ```
 
 ### Usage
