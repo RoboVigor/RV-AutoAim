@@ -91,6 +91,6 @@ ENV/
 .ropeproject
 
 # vscode
-.vscode/
+.vscode/settings.json
 
 data/test*/
