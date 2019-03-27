@@ -13,7 +13,7 @@ class Camera():
         if type(source) is int:
             self.__camera = True
 
-    def snapshot(self, start, stop, interval, save_to):
+    def snapshot(self, start, stop, interval, save_to, width=1024, height=768):
         '''
         start: "hour:minute:second"
         stop : "hour:minute:second"
@@ -24,6 +24,8 @@ class Camera():
 
         if self.__camera:
             capture.set(cv2.CAP_PROP_FPS, 30)
+            capture.set(3, width)
+            capture.set(4, height)
             start = self.__parse_time(start)
             stop = self.__parse_time(stop)
             for i in range(int((stop-start)*1000/interval)):
@@ -54,4 +56,4 @@ class Camera():
 
 if __name__ == '__main__':
     cam = Camera(0)
-    cam.snapshot('00:00:00', '00:00:05', 1000, 'data/capture/')
+    cam.snapshot('00:00:00', '00:01:00', 200, 'data/capture/')
