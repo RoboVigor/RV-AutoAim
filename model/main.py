@@ -17,49 +17,42 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import sys
-import context
+sys.path.append("..")
 import autoaim
 
 # Devices
-if torch.cuda.is_available():
+# if torch.cuda.is_available():
+if False:
     device = torch.device('cuda')
     print('Device: GPU.')
 else:
     device = torch.device('cpu')
     print('Device: CPU.')
 
-device = torch.device('cpu')
-
 # Dataset
 
 
-def preprocess(t):
-    # scaling
-    max = torch.max(t, 0)[0]
-    min = torch.min(t, 0)[0]
-    t = (t-min)/(max-min)
+def preprocess(t, h):
     # shuffling
     r = torch.randperm(t.size(0))
     t = t[r, :]
     # GIVE ME MORE!!
     _ = t[:, :-1]
-    t = torch.cat((_, _*_, _*_*_, t[:, -1:]), 1)
+    t = torch.cat((_, t[:, -1:]), 1)
     return t
 
 
-def load(filename, cut):
-    header, data = autoaim.DataLoader(filename).read_csv()
+def load(filename):
+    header, data = autoaim.DataLoader().read_csv(filename)
     data = torch.Tensor(data).to(device)
-    data = preprocess(data)
-    cut = int(data.size(0)*0.8)
-    x_train = data[:cut, :-1]
-    y_train = data[:cut, -1:]
-    x_test = data[cut:, :-1]
-    y_test = data[cut:, -1:]
-    return x_train, y_train, x_test, y_test, header
+    data = preprocess(data, header)
+    x = data[:, :-1]
+    y = data[:, -1:]
+    return x, y, header
 
 
-x_train, y_train, x_test, y_test, header = load('train.csv', 0.9)
+x_train, y_train, header = load('train.csv')
+x_test, y_test, _ = load('test.csv')
 
 train_dataset_size = x_train.size(0)
 test_dataset_size = x_test.size(0)
@@ -85,15 +78,14 @@ class Model(torch.nn.Module):
         y_pred = self.sigmoid(self.linear(x))
         return y_pred
 
-
-model = Model().to(device)
-
 # Training loop
+
+
 @autoaim.helpers.time_this
 def train(learning_rate, epoch_num):
     # Loss and optimizer
     criterion = nn.BCELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
     # Train loop
     print('====== Config ======')
     print('learning_rate: {}'.format(learning_rate))
@@ -122,8 +114,7 @@ def analyse(x_anls, y_anls, threshold):
     y_pred = model(x_anls)
 
     # Convert to numpy array
-    x_anls, y_anls, y_pred = (t.detach().numpy()
-                              for t in [x_anls, y_anls, y_pred])
+    x_anls, y_anls, y_pred = (t.numpy() for t in [x_anls, y_anls, y_pred])
 
     # Sort
     _1, _2 = np.where(y_anls == 1)[0], np.where(y_anls == 0)[0]
@@ -145,12 +136,14 @@ def analyse(x_anls, y_anls, threshold):
     num_negative = len(np.where(y_anls == 0)[0])
     _ = np.where(y_pred >= threshold)[0]
     num_true_positive = len(np.where(y_anls[_, :] == 1)[0])
-    num_fasle_positive = len(np.where(y_anls[_, :] == 0)[0])
+    num_false_positive = len(np.where(y_anls[_, :] == 0)[0])
     _ = np.where(y_pred < threshold)[0]
-    num_true_negative = len(np.where(y_anls[_, :] == 1)[0])
-    num_fasle_negative = len(np.where(y_anls[_, :] == 0)[0])
-    print(num_true_positive, num_fasle_positive,
-          num_true_negative, num_fasle_negative)
+    num_false_negative = len(np.where(y_anls[_, :] == 1)[0])
+    num_true_negative = len(np.where(y_anls[_, :] == 0)[0])
+    print('true positive: {}'.format(num_true_positive))
+    print('false positive: {}'.format(num_false_positive))
+    print('true negative: {}'.format(num_true_negative))
+    print('false negative: {}\n'.format(num_false_negative))
 
     # Weight
     x = np.linspace(0, 1)
@@ -166,10 +159,22 @@ def analyse(x_anls, y_anls, threshold):
         plt.plot(x_anls[:, i], y_anls, 'ro', label='Data')
         plt.legend()
         plt.show()
-        _1, _2 = i % (len(header) - 1), int(i/len(header)+1)
+        _1, _2 = i % (len(header) - 1), int((i+1)/len(header)+1)
         print('w[{}] {} #{}: {}'.format(i, header[_1], _2, w[i]))
+# Save
+
+
+def save(filename):
+    dataloader = autoaim.DataLoader()
+    dataloader.new_csv(filename, autoaim.feature.enabled_props)
+    w = [wi.data.cpu() for wi in model.parameters()]
+    w = torch.cat((w[0][0], w[1])).numpy()
+    dataloader.append_csv(filename, w)
 
 
 if __name__ == '__main__':
-    train(0.0003, 40000)
-    analyse(x_test, y_test, 0.2)
+    model = Model().to(device)
+    train(0.03, 20000)
+    with torch.no_grad():
+        save('weight1.csv')
+        analyse(x_test, y_test, 0.5)

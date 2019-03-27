@@ -9,7 +9,7 @@ with open('LICENSE') as f:
 
 setup(
     name='AutoAim',
-    version='2.5.1',
+    version='2.5.2',
     description='A project for detecting armors.',
     author='FuXing PS',
     author_email='robovigor@gmail.com',
