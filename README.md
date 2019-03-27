@@ -7,10 +7,13 @@
 ## Install
 
 ```bash
-conda create -n cv numpy opencv pytorch torchvision cudatoolkit=9.0 python=3.6
+# install basic requirements
+conda create -n cv numpy opencv pytorch torchvision cudatoolkit=9.0 python=3.6 -c pytorch
 conda activate cv
 pip install -r requirements.txt
 bash install.sh
+# install developing requirements
+conda install jupyterlab -c conda-forge
 ```
 
 ### Usage
