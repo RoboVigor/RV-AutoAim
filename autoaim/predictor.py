@@ -50,8 +50,8 @@ class Predictor():
             print(x)
         # debug
         pipe(
-            # img.copy(),
-            f.mat.copy(),
+            img.copy(),
+            # f.mat.copy(),
             f.draw_bounding_rects,
             f.draw_texts()(
                 # lambda l: '{:.2f}'.format(l.point_area)
