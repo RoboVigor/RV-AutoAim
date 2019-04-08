@@ -17,7 +17,6 @@ class SerialTestSuite(unittest.TestCase):
         crc = autoaim.aaserial.crc_calculate(data1[1:4], 3)
         assert crc == 2
 
-    @unittest.skipIf(isTravis)
     def test_feature(self):
         for i in range(0, 5, 1):
             img_url = 'data/test8/img{}.jpg'.format(i)
@@ -35,7 +34,6 @@ class SerialTestSuite(unittest.TestCase):
             if exit:
                 break
 
-    @unittest.skipIf(isTravis)
     def test_predictor(self):
         for i in range(0, 5, 1):
             img_url = 'data/test8/img{}.jpg'.format(i)
