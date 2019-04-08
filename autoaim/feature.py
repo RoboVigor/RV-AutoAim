@@ -163,12 +163,17 @@ class Feature():
 
     def calc_contours(self, binary_mat=None):
         '''binary_mat -> lamps, contours'''
+        max_contour_len = self.config['max_contour_len']
         if binary_mat is None:
             binary_mat = self.binary_mat
         contours = cv2.findContours(
             binary_mat, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
         lamps = [Lamp(x) for x in contours]
-        self.__lamps = lamps
+        print('contours: ',len(contours))
+        if len(contours) > max_contour_len:
+            self.__lamps = []
+        else:
+            self.__lamps = lamps
         self.__set_calculated('lamps')
         self.__set_calculated('contours')
         return lamps
@@ -281,6 +286,7 @@ class Feature():
         'preprocess': False,
         'rect_area_threshold': (64, 4096),
         'point_area_threshold': (16, 4096),
+        'max_contour_len': 500
     }
 
 
