@@ -13,6 +13,7 @@ import math
 import xml.etree.ElementTree as ET
 import cv2
 import numpy as np
+import random
 from toolz import pipe, curry
 from autoaim import feature, Feature, helpers
 
@@ -39,8 +40,8 @@ class DataLoader():
         self.new_csv(test_filename, header)
         for dataset in datasets:
             dataset_path = data_path+'/'+dataset
-            files = [x for x in os.listdir(
-                dataset_path) if os.path.isfile(dataset_path+'/'+x)]
+            files = [x for x in os.listdir(dataset_path) if os.path.isfile(dataset_path+'/'+x)]
+            random.shuffle(files)
             cut_len = int(cut*len(files))
             self.load_images(train_filename, dataset, files[0:cut_len])
             self.load_images(test_filename, dataset, files[cut_len:-1])
@@ -184,7 +185,7 @@ class DataLoader():
 if __name__ == '__main__':
     props = feature.enabled_props
     datasets = [
-        'test7',
+        'test8',
     ]
     dataloader = DataLoader(debug=False)
     dataloader.load_datasets(datasets, props)

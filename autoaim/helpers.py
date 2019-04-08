@@ -4,7 +4,6 @@
 import cv2
 import numpy
 
-
 def load(img):
     """automatically load image from str or array"""
     if isinstance(img, str):
@@ -27,6 +26,17 @@ def showoff(img, timeout=0, update=False):
     if key == 27:
         return True
     return False
+
+def draw(key, img):
+    lamps = self.lamps
+    getattr(self, 'bounding_rects')
+    for lamp in lamps:
+        x, y, w, h = lamp.bounding_rect
+        cv2.putText(img, str(key(lamp)),
+                    (x, int(y+h+15)),
+                    cv2.FONT_HERSHEY_PLAIN, 1.2, (200, 200, 200), 1
+                    )
+    return img
 
 
 def time_this(original_function):
