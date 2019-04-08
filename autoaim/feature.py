@@ -31,7 +31,6 @@ class Lamp(object):
         except KeyError:
             raise AttributeError
 
-
 class Feature():
 
     def __init__(self, img, **config):
@@ -310,7 +309,7 @@ enabled_props = [
 
 
 if __name__ == '__main__':
-    for i in range(44, 50, 1):
+    for i in range(0, 50, 1):
         img_url = 'data/test7/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)

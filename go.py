@@ -20,4 +20,4 @@ for i in range(0, 10000):
         output = (x1+w1/2-w/2)/w*20
         output = int(output+128)
         print(output-128)
-        autoaim.serial.send([output])
+        autoaim.telegram.send([output])

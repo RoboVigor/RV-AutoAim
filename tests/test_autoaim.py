@@ -3,19 +3,15 @@ import unittest
 import os
 import autoaim
 from autoaim import *
-import serial
-import serial.tools.list_ports
 
 data1 = [87, 16, 0, 6, 0, 88]
-port_list = list(serial.tools.list_ports.comports())
 
 isTravis = bool(os.environ.get('TRAVIS_PYTHON_VERSION'))
 
-
-class SerialTestSuite(unittest.TestCase):
+class AutoAimTestSuite(unittest.TestCase):
 
     def test_crc_calculation(self):
-        crc = aaserial.crc_calculate(data1[1:4], 3)
+        crc = telegram.crc_calculate(data1[1:4], 3)
         assert crc == 2
 
     def test_feature(self):
@@ -33,8 +29,6 @@ class SerialTestSuite(unittest.TestCase):
                 'point_areas',
             ])
             print('   find {} contours'.format(len(feature.contours)))
-            if exit:
-                break
 
     def test_predictor(self):
         print('--- predictor ---')
@@ -47,13 +41,35 @@ class SerialTestSuite(unittest.TestCase):
             lamps = [x for x in lamps if x.y > 0.5]
             print('   find {} lamp'.format(len(lamps)))
 
-    @unittest.skipUnless(port_list and (not isTravis), 'No serial port available.')
-    def test_serial_write_and_read(self):
-        print('--- serial ---')
-        with serial.Serial('/dev/ttyTHS2', 9600, timeout=1) as ser:
-            ser.write(bytearray(data1))
-            x = ser.read(100)
-        print([i for i in x])
+    # @helpers.time_this
+    # def test_fps(self):
+    #     print('--- predict 100 image from test8 ---')
+    #     for i in range(0, 100, 1):
+    #         img_url = 'data/test8/img{}.jpg'.format(i)
+    #         print('Predict {}'.format(img_url))
+    #         img = helpers.load(img_url)
+    #         predictor = Predictor('weight8.csv')
+    #         lamps = predictor.predict(img, mode='red', debug=False)
+    #         lamps = [x for x in lamps if x.y > 0.5]
+
+    @helpers.time_this
+    def test_fps(self):
+        print('--- predict 100 image from test8 ---')
+        for i in range(0, 100, 1):
+            img_url = 'data/test8/img{}.jpg'.format(i)
+            print('Feature: {}'.format(img_url))
+            img = helpers.load(img_url)
+            feature = Feature(img)
+            feature.calc([
+                'contours',
+                'bounding_rects',
+                'rotated_rects',
+            ])
+
+    @unittest.skipUnless(telegram.port_list and (not isTravis), 'No serial port available.')
+    def test_telegram(self):
+        print('--- telegram ---')
+        x = telegram.send(bytearray(data1))
         print(x)
         assert x
 

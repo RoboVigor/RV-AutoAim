@@ -3,9 +3,9 @@
 # CRC-8
 
 import serial
-import serial.tools.list_ports
+from serial.tools import list_ports
 
-port_list = list(serial.tools.list_ports.comports())
+port_list = list(list_ports.comports())
 if len(port_list) >0:
     port_name = port_list[0].device
 
@@ -34,13 +34,16 @@ def crc_calculate(message, nBytes):
         byte = byte + 1
     return remainder
 
-def send(data):
+def send(data, feedback=False):
     with serial.Serial(port_name, 9600, timeout=0.1) as ser:
         ser.write(bytearray(data))
-    #     x = ser.read(100)
-    # print([i for i in x])
-    # print(x)
-    # return x
+        if feedback:
+            x = ser.read(100)
+            print([i for i in x])
+            print(x)
+            return x
+        else:
+            return True
 
 if __name__ == '__main__':
     test = crc_calculate([16, 0, 6], 3)

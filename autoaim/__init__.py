@@ -1,4 +1,4 @@
-from . import serial as aaserial
+from . import telegram
 from . import helpers
 from . import feature
 from . import camera
