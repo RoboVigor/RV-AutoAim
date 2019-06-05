@@ -94,3 +94,4 @@ ENV/
 .vscode/settings.json
 
 data/test*/
+data/capture*/**
