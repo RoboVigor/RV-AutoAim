@@ -21,6 +21,7 @@ def moving_average(last, new):
 x_last = [0, 0, 0]
 y_last = [0, 0, 0]
 
+seq = 0
 while True:
     suc, img = capture.read()
     predictor = autoaim.Predictor('weight8.csv')
@@ -40,5 +41,6 @@ while True:
 
         # output
         print(x*15, y*-4)
-        packet = autoaim.telegram.pack(0x0401, [x*15, y*-4])
+        packet = autoaim.telegram.pack(0x0401, [x*15, y*-4], seq=seq)
+        seq += 1
         autoaim.telegram.send(packet)
