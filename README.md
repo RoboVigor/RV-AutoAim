@@ -55,6 +55,8 @@ pipe(img.copy(),
 | CRC8 | 8      | 检验段 |            |
 | EOF  | 8      | 结束段        | 88         |
 
+已废除，通讯协议见[RM2019裁判系统用户接口协议附录 V1.1.pdf](./docs/RM2019裁判系统用户接口协议附录 V1.1.pdf)
+
 ## Contribute
 
 ### Python 风格
