@@ -34,7 +34,7 @@ class Predictor():
         elif mode == 'blue':
             f = Feature(img, channel=lambda c: cv2.subtract(c[0], c[2]))
         elif mode == 'white':
-            f = Feature(img, channel=lambda c: c[1])
+            f = Feature(img, channel=lambda c: c[0])
         elif mode == 'old':
             f = Feature(img,
                         preprocess=False,
