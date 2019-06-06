@@ -3,6 +3,8 @@
 
 import cv2
 import numpy
+from functools import wraps
+
 
 def load(img):
     """automatically load image from str or array"""
@@ -26,6 +28,7 @@ def showoff(img, timeout=0, update=False):
     if key == 27:
         return True
     return False
+
 
 def draw(key, img):
     lamps = self.lamps
@@ -73,6 +76,16 @@ def time_all_class_methods(Cls):
             else:
                 return x
     return NewCls
+
+
+def coroutine(func):
+    """Prime the coroutine"""
+    @wraps(func)
+    def primer(*args, **kwargs):
+        gen = func(*args, **kwargs)
+        next(gen)
+        return gen
+    return primer
 
 
 if __name__ == '__main__':

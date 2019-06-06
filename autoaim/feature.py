@@ -31,6 +31,7 @@ class Lamp(object):
         except KeyError:
             raise AttributeError
 
+
 class Feature():
 
     def __init__(self, img, **config):
@@ -169,7 +170,6 @@ class Feature():
         contours = cv2.findContours(
             binary_mat, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
         lamps = [Lamp(x) for x in contours]
-        print('contours: ',len(contours))
         if len(contours) > max_contour_len:
             self.__lamps = []
         else:
