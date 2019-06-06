@@ -18,7 +18,7 @@ def moving_average(last, new):
     return r
 
 
-x_last = [0, 0, 0, 0, 0]
+x_last = [0, 0, 0]
 y_last = [0, 0, 0]
 
 while True:
@@ -29,16 +29,16 @@ while True:
     if len(lamps) > 0:
         x1, y1, w1, h1 = lamps[-1].bounding_rect
         print('---------')
+
         # current
         x = (2*x1+w1-w)/w
         y = (2*y1+h1-h)/h
+
         # avarage
         x = moving_average(x_last, x)
         y = moving_average(y_last, y)
 
         # output
-        x = round(x*15)
-        y = round(y*-4)
-        print(x, y)
-        output = (x+15) << 3 | (y+3)
-        #autoaim.telegram.send([output], port='COM6')
+        print(x*15, y*-4)
+        packet = autoaim.telegram.pack(0x0401, [x*15, y*-4])
+        autoaim.telegram.send(packet)
