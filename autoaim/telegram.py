@@ -6,6 +6,7 @@ import serial
 from serial.tools import list_ports
 import struct
 import cv2
+import random
 from autoaim import helpers
 
 # Set default port
@@ -71,12 +72,14 @@ def data_pack(data):
     return packet
 
 
-def pack(id, data, seq=0x00):
+def pack(id, data, seq=None):
     '''
     <  little-endian;    H  uint16_t;
     f  float;            i  int32_t;
     see https://docs.python.org/3/library/struct.html
     '''
+    if seq is None:
+        seq = random.randint(0, 255)
     data_packet = data_pack(data)
     packet = bytes([0xA5])                       # SOF
     packet += struct.pack('<H', len(data_packet))  # data_length
@@ -163,11 +166,12 @@ def send(data, feedback=False, port=default_port):
 
 if __name__ == '__main__':
     # pack
-    packet = pack(0x0401, [3.1234, -15.555])
+    packet = pack(0x0401, [3.1234, -15.555], seq=0x04)
     print(*('{:02X}'.format(x) for x in packet))
-    # for i in range(30):
-    #     send(pack(0x0401, [i*1.01, -15.555]))
-    #     cv2.waitKey(20)
+    # while True:
+    #     for i in range(10):
+    send(pack(0x0401, [-5.0, 0.0]))
+    cv2.waitKey(20)
 
     # unpack
     unpacker = Unpacker()

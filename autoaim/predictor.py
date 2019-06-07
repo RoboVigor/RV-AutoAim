@@ -25,7 +25,7 @@ class Predictor():
         self.props = props
         self.w = np.array(w[0])
 
-    def predict(self, img, mode='red', debug=True):
+    def predict(self, img, mode='red', debug=True, timeout=50):
         w = self.w
         calcdict = feature.calcdict
         # modes
@@ -55,21 +55,24 @@ class Predictor():
             pipe(
                 img.copy(),
                 # f.mat.copy(),
+                f.draw_contours,
                 f.draw_bounding_rects,
                 f.draw_texts()(
+                    # lambda l: '{:.2f}'.format(l.bounding_rect_area)
                     # lambda l: '{:.2f}'.format(l.point_area)
+                    # lambda l: '{:.2f}'.format(l.bounding_rect[0])
                     lambda l: '{:.2f}'.format(l.y)
                 ),
-                curry(helpers.showoff)(timeout=100,update=True)
+                curry(helpers.showoff)(timeout=timeout, update=True)
             )
         return f.lamps
 
 
 if __name__ == '__main__':
     for i in range(0, 250, 1):
-        img_url = 'data/test8/img{}.jpg'.format(i)
+        img_url = 'data/test9/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
 
-        predictor = Predictor('weight8.csv')
+        predictor = Predictor('weight9.csv')
         predictor.predict(img, mode='red')

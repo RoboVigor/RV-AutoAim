@@ -127,14 +127,11 @@ class Feature():
 
     def apply_preprocess(self, mat):
         mat = mat.copy()
-        mat = cv2.GaussianBlur(mat, (5, 5), 0, 0, cv2.BORDER_DEFAULT)
-        # mat = cv2.Sobel(mat, cv2.CV_8U, 1, 0, ksize=3)
-        # _, mat = cv2.threshold(mat, 250, 255, cv2.THRESH_BINARY)
-        # element1 = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 1))
-        # element2 = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 6))
-        # mat = cv2.dilate(mat, element2, iterations=1)
-        # mat = cv2.erode(mat, element1, iterations=1)
-        # mat = cv2.dilate(mat, element2, iterations=1)
+        kernel = np.ones((5, 5), np.uint8)
+        mat = cv2.dilate(mat, kernel, iterations=1)
+        mat = cv2.erode(mat, kernel, iterations=1)
+        # cv2.imshow('Input', mat)
+
         return mat
 
     def apply_binarization(self, mat):
@@ -171,7 +168,7 @@ class Feature():
             binary_mat, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
         lamps = [Lamp(x) for x in contours]
         if len(contours) > max_contour_len:
-            self.__lamps = []
+            self.__lamps = lamps[0:max_contour_len]
         else:
             self.__lamps = lamps
         self.__set_calculated('lamps')
@@ -282,11 +279,11 @@ class Feature():
 
     __default_config = {
         'channel': lambda c: cv2.subtract(c[2], c[0]),  # (b,g,r)
-        'threshold': lambda t: t,
-        'preprocess': False,
-        'rect_area_threshold': (64, 4096),
-        'point_area_threshold': (16, 4096),
-        'max_contour_len': 500
+        'threshold': lambda t: (255-t) * 0.45+t,
+        'preprocess': True,
+        'rect_area_threshold': (128, 16384),
+        'point_area_threshold': (64, 8192),
+        'max_contour_len': 100
     }
 
 
@@ -315,8 +312,8 @@ enabled_props = [
 
 
 if __name__ == '__main__':
-    for i in range(0, 50, 1):
-        img_url = 'data/test7/img{}.jpg'.format(i)
+    for i in range(167, 200, 1):
+        img_url = 'data/test9/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
 
@@ -341,7 +338,7 @@ if __name__ == '__main__':
             # img.copy(),
             # feature.mat.copy(),
             feature.binary_mat.copy(),
-            # feature.draw_contours,
+            feature.draw_contours,
             feature.draw_bounding_rects,
             # feature.draw_rotated_rects,
             #  feature.draw_ellipses,

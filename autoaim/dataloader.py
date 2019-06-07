@@ -40,7 +40,8 @@ class DataLoader():
         self.new_csv(test_filename, header)
         for dataset in datasets:
             dataset_path = data_path+'/'+dataset
-            files = [x for x in os.listdir(dataset_path) if os.path.isfile(dataset_path+'/'+x)]
+            files = [x for x in os.listdir(
+                dataset_path) if os.path.isfile(dataset_path+'/'+x)]
             random.shuffle(files)
             cut_len = int(cut*len(files))
             self.load_images(train_filename, dataset, files[0:cut_len])
@@ -185,7 +186,7 @@ class DataLoader():
 if __name__ == '__main__':
     props = feature.enabled_props
     datasets = [
-        'test8',
+        'test9',
     ]
     dataloader = DataLoader(debug=False)
     dataloader.load_datasets(datasets, props)

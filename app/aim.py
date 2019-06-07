@@ -1,18 +1,20 @@
 import autoaim
 import cv2
-w = 1024
-h = 768
-camera = autoaim.Camera(0)
+import time
+
+ww = 1280
+hh = 720
+camera = autoaim.Camera(1)
 capture = camera.capture
-capture.set(3, w)
-capture.set(4, h)
+capture.set(3, ww)
+capture.set(4, hh)
 suc, img = capture.read()
 # autoaim.helpers.showoff(img)
 # cv2.waitKey(-1)
 
 
 def moving_average(last, new):
-    r = sum(last)/len(last)*0.6+new*0.4
+    r = sum(last)/len(last)*0.3+new*0.7
     del last[0]
     last += [new]
     return r
@@ -22,25 +24,44 @@ x_last = [0, 0, 0]
 y_last = [0, 0, 0]
 
 seq = 0
+fpscount = -1
+last_timestamp = time.time()
+duration = 1
 while True:
     suc, img = capture.read()
     predictor = autoaim.Predictor('weight8.csv')
-    lamps = predictor.predict(img, mode='red', debug=True)
+    lamps = predictor.predict(img, mode='white', debug=True, timeout=1)
     lamps.sort(key=lambda x: x.y)
-    if len(lamps) > 0:
+    x, y, w, h = (0, 0, 0, 0)
+    if len(lamps) == 1:
+        x, y, w, h = lamps[-1].bounding_rect
+    elif len(lamps) > 1:
         x1, y1, w1, h1 = lamps[-1].bounding_rect
-        print('---------')
+        x2, y2, w2, h2 = lamps[-2].bounding_rect
+        x = (x1+x2)/2
+        y = (y1+y2)/2
+        w = (w1+w2)/2
+        h = (h1+h2)/2
 
-        # current
-        x = (2*x1+w1-w)/w
-        y = (2*y1+h1-h)/h
+    # current
+    x = (x+w/2)/ww - 0.5
+    y = (y+h/2)/hh - 0.5
 
-        # avarage
-        x = moving_average(x_last, x)
-        y = moving_average(y_last, y)
+    # avarage
+    x = moving_average(x_last, x)
+    y = moving_average(y_last, y)
 
-        # output
-        print(x*15, y*-4)
-        packet = autoaim.telegram.pack(0x0401, [x*15, y*-4], seq=seq)
-        seq += 1
-        autoaim.telegram.send(packet)
+    # output
+    packet = autoaim.telegram.pack(0x0401, [x*15, -y*6], seq=seq)
+    seq = (seq+1) % 256
+    # autoaim.telegram.send(packet)
+
+    # calc fps
+    fpscount = (seq+1) % 50
+    if fpscount == 49:
+        duration = time.time() - last_timestamp
+        last_timestamp = time.time()
+        print("fps: ", 50/duration)
+
+    # print('---------')
+    # print(x, y)

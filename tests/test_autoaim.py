@@ -64,16 +64,13 @@ class AutoAimTestSuite(unittest.TestCase):
 
     @helpers.time_this
     def test_fps(self):
-        '''predict 100 image from test8'''
+        '''predict 100 image from test9'''
         for i in range(0, 100, 1):
-            img_url = 'data/test8/img{}.jpg'.format(i)
+            img_url = 'data/test9/img{}.jpg'.format(i)
             img = helpers.load(img_url)
-            feature = Feature(img)
-            feature.calc([
-                'contours',
-                'bounding_rects',
-                'rotated_rects',
-            ])
+            # predictor = Predictor('weight9.csv')
+            # lamps = predictor.predict(img, mode='red', debug=False)
+            # lamps = [x for x in lamps if x.y > 0.5]
 
 
 if __name__ == '__main__':
