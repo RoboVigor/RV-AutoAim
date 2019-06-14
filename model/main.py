@@ -1,15 +1,4 @@
-'''
-终于有个能用的模型了...
-
-Todo:
-- 改进ROC
-- 尝试每个epoch随机载入数据
-- 尝试正则化 https://cloud.tencent.com/developer/ask/149180
-- 特征工程 https://zhuanlan.zhihu.com/p/37880492
-- weight scale
-- 考虑样本不平衡 https://zhuanlan.zhihu.com/p/56882616
-'''
-
+import autoaim
 import math
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,16 +7,16 @@ import torch.nn as nn
 from torch.autograd import Variable
 import sys
 sys.path.append("..")
-import autoaim
 
 # Devices
-# if torch.cuda.is_available():
-if False:
+if torch.cuda.is_available():
     device = torch.device('cuda')
     print('Device: GPU.')
 else:
     device = torch.device('cpu')
     print('Device: CPU.')
+
+device = torch.device('cpu')
 
 # Dataset
 
@@ -106,8 +95,6 @@ def train(learning_rate, epoch_num):
             print("Epoch: [{!s:6}/{!s:6}], Loss: {:.2f}, Test loss: {:.2f}"
                   .format(epoch+1, epoch_num, loss, loss_test))
 
-# Test
-
 
 def analyse(x_anls, y_anls, threshold):
     # Predict
@@ -173,8 +160,10 @@ def save(filename):
 
 
 if __name__ == '__main__':
+    print("???")
     model = Model().to(device)
-    train(0.03, 20000)
+    train(0.01, 100000)
     with torch.no_grad():
-        save('weight1.csv')
-        analyse(x_test, y_test, 0.5)
+        # x_test, y_test,*_ = load('test.csv', 0)
+        save('weight.csv')
+        # analyse(x_test, y_test, 0.5)
