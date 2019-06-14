@@ -55,6 +55,7 @@ class Predictor():
             pipe(
                 img.copy(),
                 # f.mat.copy(),
+                # f.binary_mat.copy(),
                 f.draw_contours,
                 f.draw_bounding_rects,
                 f.draw_texts()(

@@ -30,9 +30,10 @@ duration = 1
 while True:
     suc, img = capture.read()
     predictor = autoaim.Predictor('weight8.csv')
-    lamps = predictor.predict(img, mode='white', debug=True, timeout=1)
+    lamps = predictor.predict(img, mode='red', debug=True, timeout=1)
     lamps.sort(key=lambda x: x.y)
     x, y, w, h = (0, 0, 0, 0)
+    lamps = [l for l in lamps if l.y > 0.15]
     if len(lamps) == 1:
         x, y, w, h = lamps[-1].bounding_rect
     elif len(lamps) > 1:
@@ -52,9 +53,10 @@ while True:
     y = moving_average(y_last, y)
 
     # output
-    packet = autoaim.telegram.pack(0x0401, [x*15, -y*6], seq=seq)
+    packet = autoaim.telegram.pack(0x0401, [x*20, -y*6], seq=seq)
     seq = (seq+1) % 256
-    # autoaim.telegram.send(packet)
+    autoaim.telegram.send(packet)
+    cv2.waitKey(10)
 
     # calc fps
     fpscount = (seq+1) % 50
@@ -64,4 +66,4 @@ while True:
         print("fps: ", 50/duration)
 
     # print('---------')
-    # print(x, y)
+    #print(x*30, y)

@@ -279,7 +279,7 @@ class Feature():
 
     __default_config = {
         'channel': lambda c: cv2.subtract(c[2], c[0]),  # (b,g,r)
-        'threshold': lambda t: (255-t) * 0.45+t,
+        'threshold': lambda t: (255-t) * 0.2+t,
         'preprocess': True,
         'rect_area_threshold': (128, 16384),
         'point_area_threshold': (64, 8192),
