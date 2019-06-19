@@ -29,13 +29,8 @@ def load_img():
     capture = camera.capture
     capture.set(3, ww)
     capture.set(4, hh)
-    capture.set(cv2.CAP_PROP_FPS, 120)
-    print(capture.get(cv2.CAP_PROP_FPS))
     capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
     capture.set(cv2.CAP_PROP_EXPOSURE, -9)
-    # suc, img = capture.read()
-    # autoaim.helpers.showoff(img)
-    # cv2.waitKey(-1)
     while aim:
         suc, new_img = capture.read()
         fpscount += 1
@@ -54,14 +49,9 @@ def aim_enemy():
     duration = 1
     while aim:
         threadLock.acquire()
-        if not new_img is None:
-            # img = new_img.copy()
-            new_img = None
-            threadLock.release()
-        else:
+        if new_img is None:
             threadLock.release()
             continue
-        fpscount = fpscount % 50 + 1
         if fpscount == 50:
             duration = time.time() - last_timestamp
             last_timestamp = time.time()

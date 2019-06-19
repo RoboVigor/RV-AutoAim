@@ -6,7 +6,8 @@ import threading
 
 # global var
 aim = True
-new_img = None
+img = None
+img_seq = 0
 ww = 1280
 hh = 720
 
@@ -23,7 +24,7 @@ def moving_average(last, new):
 
 def load_img():
     # set up camera
-    global aim, new_img, ww, hh
+    global aim, img, ww, hh, img_seq
     camera = autoaim.Camera(1)
     capture = camera.capture
     capture.set(3, ww)
@@ -34,23 +35,26 @@ def load_img():
     # autoaim.helpers.showoff(img)
     # cv2.waitKey(-1)
     while aim:
-        suc, new_img = capture.read()
+        suc, img = capture.read()
+        img_seq = img_seq % 100+1
 
 
-# aim
+def aim_enemy():
+
+
+    # aim
 x_last = [0, 0, 0]
 y_last = [0, 0, 0]
 predictor = autoaim.Predictor('weight9.csv')
 img = None
 seq = 0
 
+# fps analysis
+last_timestamp = time.time()
+fpscount = 0
+
 if __name__ == '__main__':
     threading.Thread(target=load_img).start()
-
-    # fps analysis
-    last_timestamp = time.time()
-    duration = 1
-    fpscount = 0
     while True:
         if new_img is None:
             cv2.waitKey(1)
@@ -91,7 +95,6 @@ if __name__ == '__main__':
         # calc fps
         fpscount = fpscount % 50 + 1
         if fpscount == 50:
-            duration = time.time() - last_timestamp
+            print("fps: ", 50/(time.time() - last_timestamp))
             last_timestamp = time.time()
-            print("fps: ", 50/duration)
     print("all over")

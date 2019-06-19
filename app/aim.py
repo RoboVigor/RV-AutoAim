@@ -56,7 +56,7 @@ while True:
     # output
     packet = autoaim.telegram.pack(0x0401, [x*10, -y*3], seq=seq)
     seq = (seq+1) % 256
-    autoaim.telegram.send(packet)
+    # autoaim.telegram.send(packet)
     # cv2.waitKey(10)
 
     # calc fps
