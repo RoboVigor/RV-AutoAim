@@ -287,6 +287,23 @@ class Feature():
             return img
         return curry(draw)
 
+    def draw_centers(self, img):
+        '''Usage:feature.draw_centers()'''
+        lamps = self.lamps
+        getattr(self, 'bounding_rects')
+        for lamp in lamps:
+            x, y, w, h = lamp.bounding_rect
+            cv2.circle(img, (int(x+w/2), int(y+h/2)), 5, (28, 69, 119), 3)
+        center = (int(img.shape[1]/2), int(img.shape[0]/2))
+        x, y = center
+        cv2.circle(img, center, 14, (94, 148, 213), 1)
+        cv2.circle(img, center, 2, (94, 148, 213), -1)
+        cv2.line(img, (x-14, y), (x-18, y), (94, 148, 213), 1)
+        cv2.line(img, (x+14, y), (x+18, y), (94, 148, 213), 1)
+        cv2.line(img, (x, y-14), (x, y-18), (94, 148, 213), 1)
+        cv2.line(img, (x, y+14), (x, y+18), (94, 148, 213), 1)
+        return img
+
     __default_config = {
         'channel': lambda c: cv2.subtract(c[2], c[0]),  # (b,g,r)
         'binary_threshold_scale': lambda t: (255-t) * 0.1+t,
