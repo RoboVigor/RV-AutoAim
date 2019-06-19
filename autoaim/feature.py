@@ -135,8 +135,11 @@ class Feature():
         return mat
 
     def apply_binarization(self, mat):
-        ret = cv2.threshold(mat, 0, 255, cv2.THRESH_OTSU)[0]
-        t = self.config['threshold'](ret)
+        if 'binary_threshold_value' in self.config:
+            ret = self.config['binary_threshold_value']
+        else:
+            ret = cv2.threshold(mat, 0, 255, cv2.THRESH_OTSU)[0]
+        t = self.config['binary_threshold_scale'](ret)
         binary_mat = cv2.threshold(mat, t, 255, cv2.THRESH_BINARY)[1]
         self.__set_calculated('binary_mat')
         return binary_mat
@@ -208,9 +211,14 @@ class Feature():
         if mat is None:
             mat = self.mat.copy()
         lamps = self.lamps
+
+        self.calc(['bounding_rects'])
+
         for lamp in lamps:
+            x, y, w, h = lamp.bounding_rect
             roi = np.zeros_like(mat)
             cv2.drawContours(roi, [lamp.contour], -1, color=255, thickness=-1)
+            roi = roi[y:y+h, x:x+w]
             pts = np.where(roi == 255)
             pts = mat[pts[0], pts[1]]
             point_area = len(pts)
@@ -279,7 +287,8 @@ class Feature():
 
     __default_config = {
         'channel': lambda c: cv2.subtract(c[2], c[0]),  # (b,g,r)
-        'threshold': lambda t: (255-t) * 0.2+t,
+        'binary_threshold_scale': lambda t: (255-t) * 0.1+t,
+        # 'binary_threshold_value': 25,
         'preprocess': True,
         'rect_area_threshold': (128, 16384),
         'point_area_threshold': (64, 8192),
@@ -312,8 +321,8 @@ enabled_props = [
 
 
 if __name__ == '__main__':
-    for i in range(167, 200, 1):
-        img_url = 'data/test9/img{}.jpg'.format(i)
+    for i in range(1, 200, 1):
+        img_url = 'data/test10/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
 
@@ -335,9 +344,9 @@ if __name__ == '__main__':
             'point_areas',
         ])
         exit = pipe(
-            # img.copy(),
+            img.copy(),
             # feature.mat.copy(),
-            feature.binary_mat.copy(),
+            # feature.binary_mat.copy(),
             feature.draw_contours,
             feature.draw_bounding_rects,
             # feature.draw_rotated_rects,

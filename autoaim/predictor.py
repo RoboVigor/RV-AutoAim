@@ -25,7 +25,7 @@ class Predictor():
         self.props = props
         self.w = np.array(w[0])
 
-    def predict(self, img, mode='red', debug=True, timeout=50):
+    def predict(self, img, mode='red', debug=True, timeout=50, debugInterval=10):
         w = self.w
         calcdict = feature.calcdict
         # modes

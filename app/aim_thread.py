@@ -27,9 +27,9 @@ seq = 0
 fpscount = 0
 last_timestamp = time.time()
 duration = 1
-while True:
+for i in range(300):
     suc, img = capture.read()
-    predictor = autoaim.Predictor('weight9.csv')
+    predictor = autoaim.Predictor('weight8.csv')
     lamps = predictor.predict(
         img, mode='red', debug=fpscount % 10 == 0, timeout=1)
     lamps.sort(key=lambda x: x.y)
@@ -54,9 +54,9 @@ while True:
     y = moving_average(y_last, y)
 
     # output
-    packet = autoaim.telegram.pack(0x0401, [x*10, -y*3], seq=seq)
+    packet = autoaim.telegram.pack(0x0401, [x*20, -y*6], seq=seq)
     seq = (seq+1) % 256
-    autoaim.telegram.send(packet)
+    # autoaim.telegram.send(packet)
     # cv2.waitKey(10)
 
     # calc fps

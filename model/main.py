@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import sys
-sys.path.append("..")
+import time
 
 # Devices
 if torch.cuda.is_available():
@@ -16,7 +16,7 @@ else:
     device = torch.device('cpu')
     print('Device: CPU.')
 
-device = torch.device('cpu')
+# device = torch.device('cpu')
 
 # Dataset
 
@@ -159,10 +159,30 @@ def save(filename):
     dataloader.append_csv(filename, w)
 
 
+def test(n):
+    # CPU
+    start_time = time.time()
+    a = torch.ones(n, n)
+    for _ in range(1000):
+        a += a
+    elapsed_time = time.time() - start_time
+
+    print('CPU time = ', elapsed_time)
+
+    # GPU
+    start_time = time.time()
+    b = torch.ones(n, n).cuda()
+    for _ in range(1000):
+        b += b
+    elapsed_time = time.time() - start_time
+
+    print('GPU time = ', elapsed_time)
+
+
 if __name__ == '__main__':
-    print("???")
+    test(2048)
     model = Model().to(device)
-    train(0.01, 100000)
+    train(0.01, 10000)
     with torch.no_grad():
         # x_test, y_test,*_ = load('test.csv', 0)
         save('weight.csv')

@@ -186,6 +186,7 @@ class DataLoader():
 if __name__ == '__main__':
     props = feature.enabled_props
     datasets = [
+        'test8',
         'test9',
     ]
     dataloader = DataLoader(debug=False)
