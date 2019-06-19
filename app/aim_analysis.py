@@ -8,8 +8,8 @@ from toolz import curry
 # global var
 new_img = None
 aim = True
-ww = 640
-hh = 360
+ww = 1280
+hh = 720
 
 
 def moving_average(last, new):
@@ -46,13 +46,15 @@ def aim_enemy():
         # fps
         last_timestamp = time.time()
         fpscount = 0
-        while True:
+        # quit
+        quit_counter = 0
+        while quit_counter < 500:
             if new_img is None:
                 time.sleep(0.001)
                 continue
             img = new_img
             new_img = None
-
+            quit_counter += 1
             # autoaim
             lamps = predictor.predict(
                 img, mode='red', debug=debugint(fpscount), timeout=1)
@@ -79,7 +81,7 @@ def aim_enemy():
 
             # output
             packet = autoaim.telegram.pack(
-                0x0401, [x*4, -y*2], seq=packet_seq)
+                0x0401, [x*20, -y*6], seq=packet_seq)
             packet_seq = (packet_seq+1) % 256
             if serial_output:
                 autoaim.telegram.send(packet)
@@ -90,6 +92,7 @@ def aim_enemy():
             if fpscount == 50:
                 print("fps: ", 50/(time.time() - last_timestamp))
                 last_timestamp = time.time()
+        aim = False
     return curry(aim)
 
 

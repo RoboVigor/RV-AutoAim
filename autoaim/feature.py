@@ -138,7 +138,9 @@ class Feature():
         if 'binary_threshold_value' in self.config:
             ret = self.config['binary_threshold_value']
         else:
+            # ret = 65
             ret = cv2.threshold(mat, 0, 255, cv2.THRESH_OTSU)[0]
+            # print(ret)
         t = self.config['binary_threshold_scale'](ret)
         binary_mat = cv2.threshold(mat, t, 255, cv2.THRESH_BINARY)[1]
         self.__set_calculated('binary_mat')
@@ -322,7 +324,7 @@ enabled_props = [
 
 if __name__ == '__main__':
     for i in range(1, 200, 1):
-        img_url = 'data/test10/img{}.jpg'.format(i)
+        img_url = 'data/test9/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
 
