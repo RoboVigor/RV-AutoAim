@@ -81,15 +81,15 @@ def pack(id, data, seq=None):
     if seq is None:
         seq = random.randint(0, 255)
     data_packet = data_pack(data)
-    packet = bytes([0xA5])                       # SOF
+    packet = bytes([0xA5])                         # SOF
     packet += struct.pack('<H', len(data_packet))  # data_length
-    packet += bytes([seq])                       # seq
-    crc8_checksum = get_crc8_checksum(packet)    # CRC8
-    packet += bytes([crc8_checksum])             # CRC8
-    packet += struct.pack('<H', id)              # data_length
+    packet += bytes([seq])                         # seq
+    crc8_checksum = get_crc8_checksum(packet)      # CRC8
+    packet += bytes([crc8_checksum])               # CRC8
+    packet += struct.pack('<H', id)                # id
     packet += data_packet                          # data
-    crc16_checksum = get_crc16_checksum(packet)  # CRC16
-    packet += struct.pack('<H', crc16_checksum)  # CRC16
+    crc16_checksum = get_crc16_checksum(packet)    # CRC16
+    packet += struct.pack('<H', crc16_checksum)    # CRC16
     return packet
 
 

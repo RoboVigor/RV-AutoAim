@@ -280,21 +280,40 @@ class Feature():
             getattr(self, 'bounding_rects')
             for lamp in lamps:
                 x, y, w, h = lamp.bounding_rect
-                cv2.putText(img, str(key(lamp)),
-                            (x, int(y+h+15)),
+                cv2.putText(img, str(key(lamp)), (x, int(y+h+15)),
                             cv2.FONT_HERSHEY_PLAIN, 1.2, (200, 200, 200), 1
                             )
             return img
         return curry(draw)
 
-    def draw_centers(self, img):
+    def draw_fps(self):
+        '''Usage:feature.draw_fps()(fps)'''
+        def draw(fps, img):
+            cv2.putText(img, str(fps), (25, 50),
+                        cv2.FONT_HERSHEY_DUPLEX, 1.2, (0, 200, 200), 2
+                        )
+            return img
+        return curry(draw)
+
+    def draw_target(self):
+        '''Usage:feature.draw_fps()(center)'''
+        def draw(center, img):
+            center = (int(center[0]), int(center[1]))
+            cv2.circle(img, center, 5, (50, 200, 200), -1)
+            return img
+        return curry(draw)
+
+    def draw_centers(self, img, center=None):
         '''Usage:feature.draw_centers()'''
         lamps = self.lamps
         getattr(self, 'bounding_rects')
         for lamp in lamps:
             x, y, w, h = lamp.bounding_rect
             cv2.circle(img, (int(x+w/2), int(y+h/2)), 5, (28, 69, 119), 3)
-        center = (int(img.shape[1]/2), int(img.shape[0]/2))
+        if center is None:
+            center = (int(img.shape[1]/2), int(img.shape[0]/2))
+        else:
+            center = (int(center[0]), int(center[1]))
         x, y = center
         cv2.circle(img, center, 14, (94, 148, 213), 1)
         cv2.circle(img, center, 2, (94, 148, 213), -1)
@@ -309,8 +328,8 @@ class Feature():
         'binary_threshold_scale': lambda t: (255-t) * 0.1+t,
         # 'binary_threshold_value': 25,
         'preprocess': True,
-        'rect_area_threshold': (128, 16384),
-        'point_area_threshold': (64, 8192),
+        'rect_area_threshold': (32, 16384),
+        'point_area_threshold': (32, 8192),
         'max_contour_len': 100
     }
 
@@ -344,14 +363,6 @@ if __name__ == '__main__':
         img_url = 'data/test9/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-
-        # for old database
-        # feature = Feature(img,
-        #   preprocess=False,
-        #   channel=lambda c: c[1],
-        #   threshold=lambda t: (255-t)*0.5+t)
-
-        # for new database
         feature = Feature(img)
 
         feature.calc([

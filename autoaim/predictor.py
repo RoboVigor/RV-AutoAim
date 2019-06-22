@@ -25,7 +25,7 @@ class Predictor():
         self.props = props
         self.w = np.array(w[0])
 
-    def predict(self, img, mode='red', debug=True, timeout=50, debugInterval=10):
+    def predict(self, img, mode='red', debug=True, timeout=50):
         w = self.w
         calcdict = feature.calcdict
         # modes
@@ -39,7 +39,7 @@ class Predictor():
             f = Feature(img,
                         preprocess=False,
                         channel=lambda c: c[1],
-                        threshold=lambda t: (255-t)*0.5+t)
+                        binary_threshold_scale=lambda t: (255-t)*0.5+t)
         f.calc(self.props)
         # get x_keys
         x_keys = []
@@ -58,17 +58,12 @@ class Predictor():
                 # f.binary_mat.copy(),
                 f.draw_contours,
                 f.draw_bounding_rects,
-                f.draw_centers,
                 f.draw_texts()(
-                    # lambda l: '{:.2f}'.format(l.bounding_rect_area)
-                    # lambda l: '{:.2f}'.format(l.point_area)
-                    # lambda l: '{:.2f}'.format(l.bounding_rect[0])
                     lambda l: '{:.2f}'.format(l.y)
                 ),
-                # f.draw_point()([1280, 720]),
                 curry(helpers.showoff)(timeout=timeout, update=True)
             )
-        return f.lamps
+        return f
 
 
 if __name__ == '__main__':
