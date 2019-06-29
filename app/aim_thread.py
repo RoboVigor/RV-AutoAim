@@ -2,6 +2,7 @@ import autoaim
 import cv2
 import time
 import threading
+import sys
 from toolz import curry, pipe
 
 
@@ -188,10 +189,14 @@ def aim_enemy():
 
 
 if __name__ == '__main__':
+
+    def gui_update(x): return x % 10 == 0
+    if len(sys.argv) > 1:
+        gui_update = None
+
     threading.Thread(target=load_img).start()
     threading.Thread(target=aim_enemy()(
         serial=True,
         mode='red',
-        gui_update=lambda x: x % 10 == 0
-    )).start()
+        gui_update=gui_update)).start()
     print("THE END.")
