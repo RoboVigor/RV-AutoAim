@@ -18,7 +18,7 @@ def load_img():
 
 
 if __name__ == '__main__':
-    camera = autoaim.Camera(1)
+    camera = autoaim.Camera(0)
     capture = camera.capture
     capture.set(3, ww)
     capture.set(4, hh)

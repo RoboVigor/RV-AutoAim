@@ -22,7 +22,7 @@ def moving_average(last, new):
 def load_img():
     # set up camera
     global aim, new_img, ww, hh
-    camera = autoaim.Camera(1)
+    camera = autoaim.Camera(0)
     capture = camera.capture
     capture.set(3, ww)
     capture.set(4, hh)
