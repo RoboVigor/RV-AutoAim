@@ -164,12 +164,12 @@ def aim_enemy():
             if fpscount == 100:
                 fps = 100/(time.time() - fps_last_timestamp)
                 fps_last_timestamp = time.time()
+                print("fps: ", fps)
 
             ##### GUI #####
             if (not gui_update is None) and gui_update(fpscount):
                 # print("out: ", x, y, shoot_seq)
                 # print("height: ", h, w)
-                print("fps: ", fps)
                 pipe(
                     img.copy(),
                     # feature.mat.copy(),
@@ -191,12 +191,16 @@ def aim_enemy():
 if __name__ == '__main__':
 
     def gui_update(x): return x % 10 == 0
-    if len(sys.argv) > 1:
-        gui_update = None
-
-    threading.Thread(target=load_img).start()
-    threading.Thread(target=aim_enemy()(
-        serial=True,
-        mode='red',
-        gui_update=gui_update)).start()
+    if len(sys.argv) > 1 and sys.argv[1] == 'production':
+        threading.Thread(target=load_img).start()
+        threading.Thread(target=aim_enemy()(
+            serial=True,
+            mode='red',
+            gui_update=None)).start()
+    else:
+        threading.Thread(target=load_img).start()
+        threading.Thread(target=aim_enemy()(
+            serial=False,
+            mode='red',
+            gui_update=lambda x: x % 10 == 0)).start()
     print("THE END.")
