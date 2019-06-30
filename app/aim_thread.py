@@ -62,10 +62,21 @@ def load_img():
         suc, new_img = capture.read()
 
 
+def send_packet():
+    global new_packet
+    while True:
+        if new_packet is None:
+            time.sleep(0.001)
+            continue
+        packet = new_packet
+        new_packet = None
+        autoaim.telegram.send(packet, port='/dev/ttyTHS2')
+
+
 def aim_enemy():
     def aim(serial=True, weight='weight9.csv', mode='red', gui_update=None):
         ##### set up var #####
-        global aim, new_img, ww, hh
+        global aim, new_img, new_packet, ww, hh
         # autoaim
         predictor = autoaim.Predictor(weight)
         x_last = [0, 0, 0]
@@ -153,11 +164,10 @@ def aim_enemy():
                     shoot_seq = 0
 
             ##### serial output #####
-            packet = autoaim.telegram.pack(
-                0x0401, [x*8, -y*3, bytes([shoot_seq])], seq=packet_seq)
-            packet_seq = (packet_seq+1) % 256
             if serial:
-                autoaim.telegram.send(packet)
+                new_packet = autoaim.telegram.pack(
+                    0x0401, [x*8, -y*3, bytes([shoot_seq])], seq=packet_seq)
+                packet_seq = (packet_seq+1) % 256
 
             ##### calculate fps #####
             fpscount = fpscount % 100 + 1
@@ -193,6 +203,7 @@ if __name__ == '__main__':
     def gui_update(x): return x % 10 == 0
     if len(sys.argv) > 1 and sys.argv[1] == 'production':
         threading.Thread(target=load_img).start()
+        threading.Thread(target=send_packet).start()
         threading.Thread(target=aim_enemy()(
             serial=True,
             mode='red',
