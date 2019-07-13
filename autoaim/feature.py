@@ -285,13 +285,14 @@ class Feature():
                     h2 = left.bounding_rect[3]
                 pair.bounding_rect = (x1,y1,x2-x1+w2,y2-y1+h2)
                 x,y,w,h = pair.bounding_rect
-                if w/h > 5 or w/h < 1:
+                if w/h > 8 or w/h < 2:
                     continue
                 pair.x = [
                     (y2-y1)/200,
                     abs(w2-w1)/200,
                     abs(h2-h1)/200,
-                    abs(w/h-3),
+                    abs(w/h),
+                    (w/h)*(w/h),
                     abs(left.rotated_rect_angle-90)/90,
                     abs(right.rotated_rect_angle-90)/90,
                     abs(left.rotated_rect_angle-right.rotated_rect_angle)/90,
@@ -382,10 +383,14 @@ class Feature():
         return img
 
     def draw_pair_bounding_rects(self, img):
-        rects = [x.bounding_rect for x in self.pairs]
-        for rect in rects:
+        for pair in self.pairs:
+            rect = pair.bounding_rect
+            label = pair.label
             x, y, w, h = rect
-            cv2.rectangle(img, (x, y), (x+w, y+h), (0, 200, 200), 2)
+            if label == 1:
+                cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 200), 2)
+            if label == 2:
+                cv2.rectangle(img, (x, y), (x+w, y+h), (0, 200, 0), 2)
         return img
 
     def draw_pair_bounding_text(self):

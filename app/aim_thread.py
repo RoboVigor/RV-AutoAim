@@ -76,7 +76,7 @@ def send_packet():
 
 
 def aim_enemy():
-    def aim(serial=True, lamp_weight='weight9.csv', pair_weight='test11_weight_pair.csv', mode='red', gui_update=None):
+    def aim(serial=True, lamp_weight='weight9.csv', pair_weight='pair_weight.csv', mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # autoaim
@@ -107,8 +107,7 @@ def aim_enemy():
                 img,
                 mode=mode,
                 debug=False,
-                lamp_threshold=0.01,
-                pair_threshold=0.01
+                lamp_threshold=0.01
             )
             # filter out the true lamp
             lamps = feature.lamps

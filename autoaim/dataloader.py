@@ -66,10 +66,6 @@ class DataLoader():
         props = self.props + ['bounding_rect']
         # load labels
         labels = self.load_label(dataset, image)
-        if labels is None:
-            labeled_lamps, labeled_pairs = [], []
-        else:
-            labeled_lamps, labeled_pairs = labels
         # load image
         img_path = os.path.join(data_path, dataset, image)
         img = helpers.load(img_path)
@@ -82,16 +78,19 @@ class DataLoader():
         pairs = feature.pairs
         for lamp in lamps:
             lamp.bingo = False
-            for labeled_lamp in labeled_lamps:
+            for labeled_lamp in labels[0]:
                 if self.__is_in(lamp.bounding_rect, labeled_lamp):
                     lamp.bingo = True
                     break
         for pair in pairs:
-            pair.bingo = False
-            for labeled_pair in labeled_pairs:
-                # print(pair.bounding_rect, labeled_pair)
+            pair.bingo = 0
+            for labeled_pair in labels[1]:
                 if self.__is_in(pair.bounding_rect, labeled_pair):
-                    pair.bingo = True
+                    pair.bingo = 1
+                    break
+            for labeled_pair in labels[2]:
+                if self.__is_in(pair.bounding_rect, labeled_pair):
+                    pair.bingo = 2
                     break
         print(
             '{}/{}: {} lamps, {} pairs'
@@ -101,13 +100,16 @@ class DataLoader():
             pipe(img.copy(),
                  # feature.draw_contours,
                  feature.draw_bounding_rects,
-                 self.draw_labeled_lamps()(labeled_lamps),
+                 self.draw_labeled_lamps()(lamps),
                  self.draw_bingo_lamps()(feature),
                  helpers.showoff
                  )
         return feature
 
     def load_label(self, dataset, file):
+        labels = [[], [], []]  # lamp, small, large
+
+        # load xml
         label = os.path.splitext(file)[0]
         label_path = os.path.join(
             data_path, dataset, 'label', label+'.xml')
@@ -115,10 +117,10 @@ class DataLoader():
             tree = ET.ElementTree(file=label_path)
         except:
             print('>  Label file "{}"  not found!'.format(label_path))
-            return None
+            return labels
         root = tree.getroot()
-        lamps = []
-        pairs = []
+
+        # classify
         for child in root:
             if child.tag == 'object':
                 name = child[0].text
@@ -126,10 +128,12 @@ class DataLoader():
                         child[4][3])  # xmin,xmax,ymin,ymax
                 rect = [int(x.text) for x in rect]
                 if name == 'lamp':
-                    lamps.append(rect)
+                    labels[0].append(rect)
                 elif name == 'pair1':
-                    pairs.append(rect)
-        return lamps, pairs
+                    labels[1].append(rect)
+                elif name == 'pair2':
+                    labels[2].append(rect)
+        return labels
 
     def __is_in(self, rect, labeled_rect):
         margin = 20
@@ -207,7 +211,7 @@ class DataLoader():
 if __name__ == '__main__':
     props = feature.enabled_props
     datasets = [
-        'test11',
+        'test12',
     ]
     dataloader = DataLoader(debug=False)
     dataloader.load_datasets(datasets, props)

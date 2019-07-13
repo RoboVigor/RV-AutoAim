@@ -23,11 +23,12 @@ class Predictor():
     def __init__(self, lamp_weight, pair_weight):
         props, w_lamp = DataLoader().read_csv(lamp_weight)
         _, w_pair = DataLoader().read_csv(pair_weight)
+        w_pair = np.array(w_pair).reshape(3, int(len(w_pair[0])/3))
         self.props = props
         self.w_lamp = np.array(w_lamp[0])
-        self.w_pair = np.array(w_pair[0])
+        self.w_pair = np.array(w_pair)
 
-    def predict(self, img, mode='red', debug=True, timeout=50, lamp_threshold=0, pair_threshold=0):
+    def predict(self, img, mode='red', debug=True, timeout=50, lamp_threshold=0):
         w_lamp = self.w_lamp
         w_pair = self.w_pair
         calcdict = feature.calcdict
@@ -59,9 +60,11 @@ class Predictor():
         f.calc_pairs()
         for pair in f.pairs:
             x = np.array(pair.x + [1])
-            pair.y = sigmoid(x.dot(w_pair))  # score
+            y = x.dot(np.transpose(w_pair))
+            pair.y = np.max(y)  # score
+            pair.label = np.argmax(y)  # label
         # lamp filter
-        f.pairs = [l for l in f.pairs if l.y > pair_threshold]
+        f.pairs = [l for l in f.pairs if l.label > 0]
         # debug
         if debug:
             pipe(
@@ -83,10 +86,10 @@ class Predictor():
 
 
 if __name__ == '__main__':
-    for i in range(0, 623, 1):
-        img_url = 'data/test11/img{}.jpg'.format(i)
+    for i in range(0, 300, 1):
+        img_url = 'data/test12/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
 
-        predictor = Predictor('weight9.csv', 'test11_weight_pair.csv')
+        predictor = Predictor('weight9.csv', 'pair_weight.csv')
         predictor.predict(img, mode='red', timeout=100)
