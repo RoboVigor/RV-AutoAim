@@ -167,16 +167,18 @@ def send(data, feedback=False, port=default_port):
 if __name__ == '__main__':
     # pack
     packet = pack(0x0401, [3.1234, -15.555], seq=0x04)
-    print(*('{:02X}'.format(x) for x in packet))
     # while True:
     #     for i in range(10):
-    send(pack(0x0401, [-5.0, 0.0]))
+    send(pack(0x0401, [-5.0, 0.0, bytes([1])]))
     cv2.waitKey(20)
 
     # unpack
     unpacker = Unpacker()
-    for byte in packet:
-        # print('Unpack: {:02X}'.format(byte))
-        info = unpacker.send(byte)
-        if info['state'] == 'EOF':
-            print('id: 0x{:04X}'.format(info['id']))
+    with serial.Serial('COM6', 115200, timeout=0.1) as ser:
+        while True:
+            byte = ser.read(1)
+            # print('Unpack: {:02X}'.format(byte))
+            info = unpacker.send(int.from_bytes(byte, byteorder='little'))
+            if info['state'] == 'EOF':
+                print('id: 0x{:04X}'.format(info['id']))
+                print('data: ', info['packet'])

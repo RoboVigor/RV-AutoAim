@@ -27,7 +27,7 @@ def load_img():
     capture.set(3, ww)
     capture.set(4, hh)
     capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
-    capture.set(cv2.CAP_PROP_EXPOSURE, -9)
+    capture.set(cv2.CAP_PROP_EXPOSURE, -7)
     # suc, img = capture.read()
     # autoaim.helpers.showoff(img)
     # cv2.waitKey(-1)
@@ -84,7 +84,7 @@ def aim_enemy():
                 0x0401, [x*20, -y*6], seq=packet_seq)
             packet_seq = (packet_seq+1) % 256
             if serial_output:
-                autoaim.telegram.send(packet)
+                autoaim.telegram.send(packet, port='/dev/ttyTHS2')
             # cv2.waitKey(10)
 
             # calc fps

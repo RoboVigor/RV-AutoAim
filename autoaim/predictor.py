@@ -20,13 +20,16 @@ def sigmoid(x):
 
 
 class Predictor():
-    def __init__(self, csv):
-        props, w = DataLoader().read_csv(csv)
+    def __init__(self, lamp_weight, pair_weight):
+        props, w_lamp = DataLoader().read_csv(lamp_weight)
+        _, w_pair = DataLoader().read_csv(pair_weight)
         self.props = props
-        self.w = np.array(w[0])
+        self.w_lamp = np.array(w_lamp[0])
+        self.w_pair = np.array(w_pair[0])
 
-    def predict(self, img, mode='red', debug=True, timeout=50):
-        w = self.w
+    def predict(self, img, mode='red', debug=True, timeout=50, lamp_threshold=0, pair_threshold=0):
+        w_lamp = self.w_lamp
+        w_pair = self.w_pair
         calcdict = feature.calcdict
         # modes
         if mode == 'red':
@@ -49,7 +52,16 @@ class Predictor():
         # get x and calc y
         for lamp in f.lamps:
             x = np.array([lamp.x[k] for k in x_keys] + [1])
-            lamp.y = sigmoid(x.dot(w))
+            lamp.y = sigmoid(x.dot(w_lamp))  # score
+        # lamp filter
+        f.lamps = [l for l in f.lamps if l.y > lamp_threshold]
+        # pairs
+        f.calc_pairs()
+        for pair in f.pairs:
+            x = np.array(pair.x + [1])
+            pair.y = sigmoid(x.dot(w_pair))  # score
+        # lamp filter
+        f.pairs = [l for l in f.pairs if l.y > pair_threshold]
         # debug
         if debug:
             pipe(
@@ -58,7 +70,11 @@ class Predictor():
                 # f.binary_mat.copy(),
                 f.draw_contours,
                 f.draw_bounding_rects,
-                f.draw_texts()(
+                # f.draw_texts()(
+                #     lambda l: '{:.2f}'.format(l.y)
+                # ),
+                f.draw_pair_bounding_rects,
+                f.draw_pair_bounding_text()(
                     lambda l: '{:.2f}'.format(l.y)
                 ),
                 curry(helpers.showoff)(timeout=timeout, update=True)
@@ -67,10 +83,10 @@ class Predictor():
 
 
 if __name__ == '__main__':
-    for i in range(0, 250, 1):
-        img_url = 'data/test9/img{}.jpg'.format(i)
+    for i in range(0, 623, 1):
+        img_url = 'data/test11/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
 
-        predictor = Predictor('weight9.csv')
-        predictor.predict(img, mode='red')
+        predictor = Predictor('weight9.csv', 'test11_weight_pair.csv')
+        predictor.predict(img, mode='red', timeout=100)

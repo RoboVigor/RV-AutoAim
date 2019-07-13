@@ -52,15 +52,13 @@ def pid_control(target, feedback, pid_args=None):
 
 def load_img():
     # set up camera
-    global aim, new_img, ww, hh
-    camera = autoaim.Camera(0)
-    capture = camera.capture
-    capture.set(3, ww)
-    capture.set(4, hh)
-    capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
-    capture.set(cv2.CAP_PROP_EXPOSURE, 1)
-    while aim:
-        suc, new_img = capture.read()
+    global new_img
+    for i in range(20, 623, 1):
+        img_url = 'data/test11/img{}.jpg'.format(i)
+        print('Load {}'.format(img_url))
+        new_img = autoaim.helpers.load(img_url)
+        cv2.waitKey(100)
+        # break
 
 
 def send_packet():
@@ -71,7 +69,6 @@ def send_packet():
             continue
         packet = new_packet
         new_packet = None
-        # print(packet)
         autoaim.telegram.send(packet, port='/dev/ttyTHS2')
 
 
@@ -108,7 +105,7 @@ def aim_enemy():
                 mode=mode,
                 debug=False,
                 lamp_threshold=0.01,
-                pair_threshold=0.01
+                pair_threshold=0.3
             )
             # filter out the true lamp
             lamps = feature.lamps
@@ -144,12 +141,12 @@ def aim_enemy():
                             min_distance = distance
                             close_score = pair.y
                             close_pair = pair
-                    if top_score > close_score + 0.35:
+                    if top_score > close_score + 0.3:
                         pair = pairs[-1]
                     else:
                         pair = close_pair
                     x, y, w, h = pair.bounding_rect
-                    feature.pairs = [pair]
+                    # feature.pairs = [pair]
                 elif len(pairs) == 1:
                     x, y, w, h = pairs[0].bounding_rect
                 elif len(lamps) > 1:
@@ -167,19 +164,16 @@ def aim_enemy():
 
                 # distance
                 if ww == 1280:
-                    # d = 35.69*(h**-0.866)
-                    d = 27.578*(h**-0.841)
+                    d = 35.69*(h**-0.866)
                 elif ww == 640:
-                    # d = 35.69*((h*2)**-0.866)
-                    d = 27.578*((h*2)**-0.841)
+                    d = 35.69*((h*2)**-0.866)
 
                 # antigravity
                 if d > 1.5:
                     y_fix -= (1.07*d*d+2.65*d-6.28)/5.5*h
-                    # y_fix -= (1.0424*x*x*x-8.8525*x*x+26.35*x-18.786)/5.5*h
 
                 # distance between camera and barrel
-                y_fix -= h/5.5*8
+                y_fix -= h/5.5*10
 
                 # set target
                 target_coordinate = (x+w/2, y+h/2+y_fix)
@@ -198,7 +192,7 @@ def aim_enemy():
                 motion_last_timestamp = time.time()
 
                 # decide to shoot
-                if abs(x) < 0.03 and abs(y) < 0.03:
+                if abs(x) < 0.002 and abs(y) < 0.002:
                     shoot_seq = 1
                 else:
                     shoot_seq = 0
@@ -206,7 +200,7 @@ def aim_enemy():
             ##### serial output #####
             if serial:
                 new_packet = autoaim.telegram.pack(
-                    0x0401, [float(x*4), float(-y*3), bytes([shoot_seq])], seq=packet_seq)
+                    0x0401, [x*8, -y*3, bytes([shoot_seq])], seq=packet_seq)
                 packet_seq = (packet_seq+1) % 256
 
             ##### calculate fps #####
@@ -214,7 +208,7 @@ def aim_enemy():
             if fpscount == 10:
                 fps = 10/(time.time() - fps_last_timestamp)
                 fps_last_timestamp = time.time()
-                print("fps: ", fps)
+                # print("fps: ", fps)
 
             ##### GUI #####
             if (not gui_update is None) and gui_update(fpscount):
@@ -230,11 +224,15 @@ def aim_enemy():
                     # feature.draw_texts()(
                     #     lambda l: '{:.2f}'.format(l.bounding_rect[3])),
                     feature.draw_pair_bounding_rects,
+                    # feature.draw_pair_bounding_text()(
+                    #     lambda l: '{:.2f}'.format(l.y)
+                    # ),
                     feature.draw_pair_bounding_text()(
-                        lambda l: '{:.2f}'.format(l.y)
+                        lambda l: '{:.2f}'.format(
+                            l.bounding_rect[2]/l.bounding_rect[3])
                     ),
-                    curry(feature.draw_centers)(center=(ww/2, hh/2)),
-                    # curry(feature.draw_centers)(center=(ww/2, hh/2-y_fix)),
+                    # curry(feature.draw_centers)(center=(ww/2, hh/2)),
+                    curry(feature.draw_centers)(center=(ww/2, hh/2+y_fix)),
                     feature.draw_fps()(int(fps)),
                     feature.draw_target()(target),
                     curry(autoaim.helpers.showoff)(timeout=1, update=True)
@@ -254,9 +252,8 @@ if __name__ == '__main__':
             gui_update=None)).start()
     else:
         threading.Thread(target=load_img).start()
-        threading.Thread(target=send_packet).start()
         threading.Thread(target=aim_enemy()(
             serial=False,
             mode='red',
-            gui_update=lambda x: x % 10 == 0)).start()
+            gui_update=lambda x: True)).start()
     print("THE END.")

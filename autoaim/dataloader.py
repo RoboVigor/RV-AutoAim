@@ -29,31 +29,37 @@ class DataLoader():
     # Dataset Function
     # ===================
 
-    def load_datasets(self, datasets, props, train_filename='train.csv', test_filename='test.csv', cut=0.7):
+    def load_datasets(self, datasets, props, filename='test', cut=0.7):
         '''Example input:
         datasets = ['test0', 'test1', ...]
         props = ['contour', 'bounding_rect', ...]
         '''
         self.props = props
         header = self.generate_header()
-        self.new_csv(train_filename, header)
-        self.new_csv(test_filename, header)
+        self.filename = filename
+        self.new_csv(self.join('lamp', 'train'), header)
+        self.new_csv(self.join('pair', 'train'), header)
+        self.new_csv(self.join('lamp', 'test'), header)
+        self.new_csv(self.join('pair', 'test'), header)
         for dataset in datasets:
             dataset_path = data_path+'/'+dataset
             files = [x for x in os.listdir(
                 dataset_path) if os.path.isfile(dataset_path+'/'+x)]
             random.shuffle(files)
             cut_len = int(cut*len(files))
-            self.load_images(train_filename, dataset, files[0:cut_len])
-            self.load_images(test_filename, dataset, files[cut_len:-1])
+            self.load_images('train', dataset, files[0:cut_len])
+            self.load_images('test', dataset, files[cut_len:-1])
 
-    def load_images(self, csv, dataset, images):
+    def load_images(self, data_type, dataset, images):
         for image in images:
             feature = self.load_img(dataset, image)
             if feature:
                 for lamp in feature.lamps:
                     row = [x for x in lamp.x.values()] + [int(lamp.bingo)]
-                    self.append_csv(csv, row)
+                    self.append_csv(self.join('lamp', data_type), row)
+                for pair in feature.pairs:
+                    row = pair.x + [int(pair.bingo)]
+                    self.append_csv(self.join('pair', data_type), row)
 
     def load_img(self, dataset, image):
         '''return `exit`'''
@@ -70,15 +76,27 @@ class DataLoader():
         # calc features
         feature = Feature(img)
         feature.calc(props)
+        feature.calc_pairs()
         # label the lamps
         lamps = feature.lamps
+        pairs = feature.pairs
         for lamp in lamps:
             lamp.bingo = False
             for labeled_lamp in labeled_lamps:
                 if self.__is_in(lamp.bounding_rect, labeled_lamp):
                     lamp.bingo = True
                     break
-        print('{}/{}: {} lamps'.format(dataset, image, len(lamps)))
+        for pair in pairs:
+            pair.bingo = False
+            for labeled_pair in labeled_pairs:
+                # print(pair.bounding_rect, labeled_pair)
+                if self.__is_in(pair.bounding_rect, labeled_pair):
+                    pair.bingo = True
+                    break
+        print(
+            '{}/{}: {} lamps, {} pairs'
+            .format(dataset, image, len(lamps), len(pairs))
+        )
         if self.debug:
             pipe(img.copy(),
                  # feature.draw_contours,
@@ -109,15 +127,18 @@ class DataLoader():
                 rect = [int(x.text) for x in rect]
                 if name == 'lamp':
                     lamps.append(rect)
-                elif name == 'pair':
+                elif name == 'pair1':
                     pairs.append(rect)
         return lamps, pairs
 
     def __is_in(self, rect, labeled_rect):
-        margin = 15
+        margin = 20
         x, y, w, h = rect
         diff = abs(np.array([x, x+w, y, y+h]) - np.array(labeled_rect))
         return len(np.where(diff > margin)[0]) == 0
+
+    def join(self, str1, str2):
+        return self.filename+'_'+str1+'_'+str2+'.csv'
 
     def generate_header(self):
         '''This method works together with feature.calcdict.'''
@@ -186,8 +207,7 @@ class DataLoader():
 if __name__ == '__main__':
     props = feature.enabled_props
     datasets = [
-        'test8',
-        'test9',
+        'test11',
     ]
     dataloader = DataLoader(debug=False)
     dataloader.load_datasets(datasets, props)

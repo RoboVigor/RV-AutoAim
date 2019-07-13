@@ -32,6 +32,20 @@ class Lamp(object):
             raise AttributeError
 
 
+class Pair(object):
+    def __init__(self, left, right):
+        super(Pair, self).__setattr__('data', {'left': left, 'right': right})
+
+    def __setattr__(self, name, value):
+        self.data[name] = value
+
+    def __getattr__(self, attr):
+        try:
+            return self.data[attr]
+        except KeyError:
+            raise AttributeError
+
+
 class Feature():
 
     def __init__(self, img, **config):
@@ -74,6 +88,10 @@ class Feature():
             self.calc_contours()
         return self.__lamps
 
+    @lamps.setter
+    def lamps(self, lamps):
+        self.__lamps = lamps
+
     @property
     def contours(self):
         if not self.has_calculated('contours'):
@@ -110,6 +128,16 @@ class Feature():
             self.calc_greyscales_and_point_areas()
         return [x.point_area for x in self.__lamps]
 
+    @property
+    def pairs(self):
+        if not self.has_calculated('pairs'):
+            self.calc_pairs()
+        return self.__pairs
+
+    @pairs.setter
+    def pairs(self, pairs):
+        self.__pairs = pairs
+
     # ===================
     # Helpers
     # ===================
@@ -138,9 +166,7 @@ class Feature():
         if 'binary_threshold_value' in self.config:
             ret = self.config['binary_threshold_value']
         else:
-            # ret = 65
             ret = cv2.threshold(mat, 0, 255, cv2.THRESH_OTSU)[0]
-            # print(ret)
         t = self.config['binary_threshold_scale'](ret)
         binary_mat = cv2.threshold(mat, t, 255, cv2.THRESH_BINARY)[1]
         self.__set_calculated('binary_mat')
@@ -243,6 +269,38 @@ class Feature():
         self.__set_calculated('ellipses')
         return lamps
 
+    def calc_pairs(self):
+        pairs = []
+        lamps = sorted(self.lamps, key=lambda x: x.bounding_rect[0])
+        for i in range(len(lamps)):
+            for j in range(i+1, len(lamps)):
+                left = lamps[i]
+                right = lamps[j]
+                pair = Pair(left, right)
+                (x1,y1,w1,h1),(x2,y2,w2,h2) = left.bounding_rect,right.bounding_rect
+                if y1 > y2:
+                    y1 = right.bounding_rect[1]
+                    h1 = right.bounding_rect[3]
+                    y2 = left.bounding_rect[1]
+                    h2 = left.bounding_rect[3]
+                pair.bounding_rect = (x1,y1,x2-x1+w2,y2-y1+h2)
+                x,y,w,h = pair.bounding_rect
+                if w/h > 5 or w/h < 1:
+                    continue
+                pair.x = [
+                    (y2-y1)/200,
+                    abs(w2-w1)/200,
+                    abs(h2-h1)/200,
+                    abs(w/h-3),
+                    abs(left.rotated_rect_angle-90)/90,
+                    abs(right.rotated_rect_angle-90)/90,
+                    abs(left.rotated_rect_angle-right.rotated_rect_angle)/90,
+                ]
+                pairs += [pair]
+        self.__pairs = pairs
+        self.__set_calculated('pairs')
+        return pairs
+
     # ===================
     # "draw" Function
     # ===================
@@ -323,6 +381,25 @@ class Feature():
         cv2.line(img, (x, y+14), (x, y+18), (94, 148, 213), 1)
         return img
 
+    def draw_pair_bounding_rects(self, img):
+        rects = [x.bounding_rect for x in self.pairs]
+        for rect in rects:
+            x, y, w, h = rect
+            cv2.rectangle(img, (x, y), (x+w, y+h), (0, 200, 200), 2)
+        return img
+
+    def draw_pair_bounding_text(self):
+        '''Usage:feature.draw_pair_bounding_text()(lambda x: x.point_area)'''
+        def draw(key, img):
+            pairs = self.pairs
+            for pair in pairs:
+                x, y, w, h = pair.bounding_rect
+                cv2.putText(img, str(key(pair)), (x, int(y+h+15)),
+                            cv2.FONT_HERSHEY_PLAIN, 1.2, (200, 200, 200), 1
+                            )
+            return img
+        return curry(draw)
+
     __default_config = {
         'channel': lambda c: cv2.subtract(c[2], c[0]),  # (b,g,r)
         'binary_threshold_scale': lambda t: (255-t) * 0.1+t,
@@ -360,7 +437,7 @@ enabled_props = [
 
 if __name__ == '__main__':
     for i in range(1, 200, 1):
-        img_url = 'data/test9/img{}.jpg'.format(i)
+        img_url = 'data/test11/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
         feature = Feature(img)
