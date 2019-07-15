@@ -16,6 +16,28 @@ hh = 720
 # hh = 360
 
 
+def predict_movement(last, new):
+    if (not last[-1] == 0 and abs(new/last[-1])>15) or abs(new)>70:
+        predict_clear(last)
+        return 0
+    del last[0]
+    last += [new]
+    length = len(last)
+    for val in last:
+        if val == 0:
+            length -= 1
+    # output
+    if length == 0:
+        return 0
+    else:
+        return sum(last)/length
+
+
+def predict_clear(last):
+    for i in range(len(last)):
+        last[i] = 0
+
+
 def moving_average(last, new):
     r = sum(last)/len(last)*0.25+new*0.75
     del last[0]
@@ -50,20 +72,30 @@ def pid_control(target, feedback, pid_args=None):
     return pid_output_p+pid_output_i+pid_output_d
 
 
+# def load_img():
+#     # set up camera
+#     global new_img, aim
+#     for i in range(200, 700, 1):
+#         img_url = 'data/test13/{}.jpeg'.format(i)
+#         print('Load {}'.format(img_url))
+#         new_img = autoaim.helpers.load(img_url)
+#         cv2.waitKey(20)
+#     aim = False
+
 def load_img():
     # set up camera
-    global new_img
-    for i in range(20, 623, 1):
-        img_url = 'data/test11/img{}.jpg'.format(i)
+    global new_img, aim
+    for i in range(0, 336, 1):
+        img_url = 'data/test12/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         new_img = autoaim.helpers.load(img_url)
         cv2.waitKey(100)
-        # break
+    aim = False
 
 
 def send_packet():
-    global new_packet
-    while True:
+    global new_packet, aim
+    while aim:
         if new_packet is None:
             time.sleep(0.001)
             continue
@@ -73,18 +105,31 @@ def send_packet():
 
 
 def aim_enemy():
-    def aim(serial=True, lamp_weight='weight9.csv', pair_weight='test11_weight_pair.csv', mode='red', gui_update=None):
+    def aim(serial=True, lamp_weight='weight9.csv', pair_weight='pair_weight.csv', mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
+        # config
+        threshold_target_switch = 2
+        threshold_target_changed = 0.5
+        distance_to_laser = 8
+        threshold_shoot = 0.03
+        threshold_position_changed = 70
         # autoaim
+        track_state = 1  # 0:tracking, 1:lost, 2:changed
         predictor = autoaim.Predictor(lamp_weight, pair_weight)
-        x_last = [0, 0, 0]
-        y_last = [0, 0, 0]
+        last_pair = None
+        pair = None
+        moving_average_list = ([0, 0, 0], [0, 0, 0])
+        predict_list = ([0 for i in range(7)], [0 for i in range(7)])
         y_fix = 0
+        predict = (0, 0)
         packet_seq = 0
-        shoot_seq = 0
-        motion_last_timestamp = time.time()
-        target_coordinate = (ww/2, hh/2)
+        shoot_it = 0
+        target = (ww/2, hh/2)
+        target_yfix = (ww/2, hh/2)
+        target_yfix_pred = (ww/2, hh/2)
+        output = (0, 0)
+        camera_movement = (0, 0)
         # fps
         fps_last_timestamp = time.time()
         fpscount = 0
@@ -104,8 +149,7 @@ def aim_enemy():
                 img,
                 mode=mode,
                 debug=False,
-                lamp_threshold=0.01,
-                pair_threshold=0.3
+                lamp_threshold=0.01
             )
             # filter out the true lamp
             lamps = feature.lamps
@@ -116,40 +160,63 @@ def aim_enemy():
 
             ##### analysis target #####
 
-            lost = len(lamps) == 0
-            if lost:
+            # estimate camera movement
+            _ = output[0]
+            camera_movement = (
+                254.28*_*_*_-175.89*_*_+0.4252*_,
+                0
+            )
+
+            # logic of losing target
+            if len(lamps) == 0:
                 # target lost
+                track_state = 1
                 x, y, w, h = (0, 0, 0, 0)
+                last_pair = None
+                last_target = target
                 target = (ww/2, hh/2)
-                target_coordinate = (ww/2, hh/2)
-                shoot_seq = 0
+                target_yfix = (ww/2, hh/2)
+                target_yfix_pred = (ww/2, hh/2)
+                shoot_it = 0
             else:
                 # target found
                 x, y, w, h = (0, 0, 0, 0)
+                pair = None
                 if len(pairs) > 1:
+                    track_state = 0
                     pair = None
                     top_score = pairs[-1].y
-                    min_distance = ww+hh
+                    min_distance = ww*ww+hh*hh
                     close_score = 0
                     close_pair = None
+                    # get track score
                     for pair in pairs:
                         x1, y1, w1, h1 = pair.bounding_rect
-                        x_diff = abs(target_coordinate[0]-x1)
-                        y_diff = abs(target_coordinate[1]-y1)
-                        distance = x_diff + y_diff
+                        x_diff = abs(
+                            target[0]+camera_movement[0]-x1)
+                        y_diff = abs(
+                            target[1]+camera_movement[1]-y1)
+                        distance = x_diff*x_diff + y_diff*y_diff
                         if distance < min_distance:
                             min_distance = distance
                             close_score = pair.y
                             close_pair = pair
-                    if top_score > close_score + 0.3:
+                    # decide the pair
+                    last_pair = pair
+                    if top_score - close_score > threshold_target_switch:
                         pair = pairs[-1]
+                        track_state = 2
                     else:
                         pair = close_pair
                     x, y, w, h = pair.bounding_rect
-                    # feature.pairs = [pair]
+                    feature.pairs = [pair]
                 elif len(pairs) == 1:
-                    x, y, w, h = pairs[0].bounding_rect
+                    track_state = 0
+                    last_pair = pair
+                    pair = pairs[0]
+                    x, y, w, h = pair.bounding_rect
                 elif len(lamps) > 1:
+                    track_state = 2
                     x1, y1, w1, h1 = lamps[-1].bounding_rect
                     x2, y2, w2, h2 = lamps[-2].bounding_rect
                     x = (x1+x2)/2
@@ -157,50 +224,81 @@ def aim_enemy():
                     w = (w1+w2)/2
                     h = (h1+h2)/2
                 elif len(lamps) == 1:
+                    track_state = 2
                     x, y, w, h = lamps[0].bounding_rect
 
-                ##### fix ballistic curve #####
-                y_fix = 0
+                # detect pair changed
+                if not last_pair is None and not pair is None:
+                    _ = abs(last_pair.y-pair.y)
+                    over_threshold = _ > threshold_target_changed
+                    type_changed = not pair.label == last_pair.label
+                    if over_threshold or type_changed:
+                        track_state = 2
 
                 # distance
                 if ww == 1280:
-                    d = 35.69*(h**-0.866)
+                    # d = 35.69*(h**-0.866)
+                    d = 27.578*(h**-0.841)
                 elif ww == 640:
-                    d = 35.69*((h*2)**-0.866)
+                    # d = 35.69*((h*2)**-0.866)
+                    d = 27.578*((h*2)**-0.841)
 
                 # antigravity
+                y_fix = 0
                 if d > 1.5:
                     y_fix -= (1.07*d*d+2.65*d-6.28)/5.5*h
+                    # y_fix -= (1.0424*x*x*x-8.8525*x*x+26.35*x-18.786)/5.5*h
 
                 # distance between camera and barrel
-                y_fix -= h/5.5*10
+                y_fix -= h/5.5*distance_to_laser
 
                 # set target
-                target_coordinate = (x+w/2, y+h/2+y_fix)
-                target = (x+w/2, y+h/2+y_fix)
-
-                ##### set kinestate #####
-                x = target[0]/ww - 0.5
-                y = target[1]/hh - 0.5
-
-                # avarage value
-                x = moving_average(x_last, x)
-                y = moving_average(y_last, y)
+                last_target = target
+                target = (x+w/2, y+h/2)
+                target_yfix = (x+w/2, y+h/2+y_fix)
 
                 # motion predict
-                x += (x - x_last[1])/(time.time() - motion_last_timestamp)*0.1
-                motion_last_timestamp = time.time()
+                predict = (
+                    predict_movement(
+                        predict_list[0],
+                        target[0] -
+                        (last_target[0]+camera_movement[0])
+                    ),
+                    0
+                )
+                target_yfix_pred = (target_yfix[0]+predict[0]*10, target_yfix[1])
+
+                # update track state
+                if track_state == 1:
+                    predict_clear(predict_list[0])
+                    predict = (0, 0)
+                    print(str(fpscount)+': target lost')
+                elif track_state == 2:
+                    predict_clear(predict_list[0])
+                    predict = (0, 0)
+                    print(str(fpscount)+': target changed')
+
+                ##### set kinestate #####
+                x = target_yfix[0]/ww - 0.5
+                y = target_yfix[1]/hh - 0.5
+                # x = target_yfix_pred[0]/ww - 0.5
+                # y = target_yfix_pred[1]/hh - 0.5
+
+                # avarage value
+                x = moving_average(moving_average_list[0], x)
+                y = moving_average(moving_average_list[1], y)
 
                 # decide to shoot
-                if abs(x) < 0.002 and abs(y) < 0.002:
-                    shoot_seq = 1
+                if abs(x)<threshold_shoot and abs(y)<threshold_shoot and track_state==0:
+                    shoot_it = 1
                 else:
-                    shoot_seq = 0
+                    shoot_it = 0
 
             ##### serial output #####
             if serial:
+                output = (float(x*4), float(-y*3))
                 new_packet = autoaim.telegram.pack(
-                    0x0401, [x*8, -y*3, bytes([shoot_seq])], seq=packet_seq)
+                    0x0401, [*output, bytes([shoot_it])], seq=packet_seq)
                 packet_seq = (packet_seq+1) % 256
 
             ##### calculate fps #####
@@ -212,7 +310,7 @@ def aim_enemy():
 
             ##### GUI #####
             if (not gui_update is None) and gui_update(fpscount):
-                # print("out: ", x, y, shoot_seq)
+                # print("out: ", x, y, shoot_it)
                 # print("height: ", h, w)
                 pipe(
                     img.copy(),
@@ -224,17 +322,15 @@ def aim_enemy():
                     # feature.draw_texts()(
                     #     lambda l: '{:.2f}'.format(l.bounding_rect[3])),
                     feature.draw_pair_bounding_rects,
-                    # feature.draw_pair_bounding_text()(
-                    #     lambda l: '{:.2f}'.format(l.y)
-                    # ),
                     feature.draw_pair_bounding_text()(
-                        lambda l: '{:.2f}'.format(
-                            l.bounding_rect[2]/l.bounding_rect[3])
+                        lambda l: '{:.2f}'.format(l.y)
                     ),
-                    # curry(feature.draw_centers)(center=(ww/2, hh/2)),
-                    curry(feature.draw_centers)(center=(ww/2, hh/2+y_fix)),
+                    curry(feature.draw_centers)(center=(ww/2, hh/2)),
+                    # curry(feature.draw_centers)(center=target_yfix),
+                    # curry(feature.draw_centers)(center=target_yfix_pred),
+                    feature.draw_target()(target_yfix_pred),
+                    feature.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
                     feature.draw_fps()(int(fps)),
-                    feature.draw_target()(target),
                     curry(autoaim.helpers.showoff)(timeout=1, update=True)
                 )
     return curry(aim)

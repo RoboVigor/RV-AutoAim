@@ -29,9 +29,10 @@ last_timestamp = time.time()
 duration = 1
 while True:
     suc, img = capture.read()
-    predictor = autoaim.Predictor('weight9.csv')
-    lamps = predictor.predict(
+    predictor = autoaim.Predictor('weight9.csv', 'pair_weight.csv')
+    feature = predictor.predict(
         img, mode='red', debug=fpscount % 10 == 0, timeout=1)
+    lamps = feature.lamps
     lamps.sort(key=lambda x: x.y)
     x, y, w, h = (0, 0, 0, 0)
     lamps = [l for l in lamps if l.y > 0.15]
