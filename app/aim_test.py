@@ -17,13 +17,25 @@ hh = 720
 
 
 def predict_movement(last, new):
+    if (not last[-1] == 0 and abs(new/last[-1])>15) or abs(new)>70:
+        predict_clear(last)
+        return 0
     del last[0]
     last += [new]
-    return sum(last)/len(last)
+    length = len(last)
+    for val in last:
+        if val == 0:
+            length -= 1
+    # output
+    if length == 0:
+        return 0
+    else:
+        return sum(last)/length
 
 
 def predict_clear(last):
-    return [0 for i in range(len(last))]
+    for i in range(len(last)):
+        last[i] = 0
 
 
 def moving_average(last, new):
@@ -60,28 +72,35 @@ def pid_control(target, feedback, pid_args=None):
     return pid_output_p+pid_output_i+pid_output_d
 
 
+# def load_img():
+#     # set up camera
+#     global new_img, aim
+#     for i in range(200, 700, 1):
+#         img_url = 'data/test13/{}.jpeg'.format(i)
+#         print('Load {}'.format(img_url))
+#         new_img = autoaim.helpers.load(img_url)
+#         cv2.waitKey(20)
+#     aim = False
+
 def load_img():
     # set up camera
-    global aim, new_img, ww, hh
-    camera = autoaim.Camera(0)
-    capture = camera.capture
-    capture.set(3, ww)
-    capture.set(4, hh)
-    capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
-    capture.set(cv2.CAP_PROP_EXPOSURE, 1)
-    while aim:
-        suc, new_img = capture.read()
+    global new_img, aim
+    for i in range(0, 336, 1):
+        img_url = 'data/test12/img{}.jpg'.format(i)
+        print('Load {}'.format(img_url))
+        new_img = autoaim.helpers.load(img_url)
+        cv2.waitKey(100)
+    aim = False
 
 
 def send_packet():
-    global new_packet
-    while True:
+    global new_packet, aim
+    while aim:
         if new_packet is None:
             time.sleep(0.001)
             continue
         packet = new_packet
         new_packet = None
-        # print(packet)
         autoaim.telegram.send(packet, port='/dev/ttyTHS2')
 
 
@@ -329,9 +348,8 @@ if __name__ == '__main__':
             gui_update=None)).start()
     else:
         threading.Thread(target=load_img).start()
-        # threading.Thread(target=send_packet).start()
         threading.Thread(target=aim_enemy()(
-            serial=True,
+            serial=False,
             mode='red',
-            gui_update=lambda x: x % 10 == 0)).start()
+            gui_update=lambda x: True)).start()
     print("THE END.")
