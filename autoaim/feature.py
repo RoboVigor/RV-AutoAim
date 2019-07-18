@@ -285,17 +285,25 @@ class Feature():
                     h2 = left.bounding_rect[3]
                 pair.bounding_rect = (x1,y1,x2-x1+w2,y2-y1+h2)
                 x,y,w,h = pair.bounding_rect
-                if w/h > 8 or w/h < 2:
-                    continue
+                # if w/h > 8 or w/h < 2:
+                    # continue
+                pair.ratio = w/((h1+h2)/2)
                 pair.x = [
+                    abs(pair.ratio-3.75),
+                    abs(pair.ratio-6.25),
                     (y2-y1)/200,
                     abs(w2-w1)/200,
                     abs(h2-h1)/200,
-                    abs(w/h),
-                    (w/h)*(w/h),
                     abs(left.rotated_rect_angle-90)/90,
                     abs(right.rotated_rect_angle-90)/90,
                     abs(left.rotated_rect_angle-right.rotated_rect_angle)/90,
+                ]
+                pair.anglex = [
+                    # (y2-y1)/200,
+                    (left.rotated_rect_angle-90)/90,
+                    (right.rotated_rect_angle-90)/90,
+                    w1/w2,
+                    w2/w1,
                 ]
                 pairs += [pair]
         self.__pairs = pairs

@@ -15,10 +15,12 @@ import cv2
 import numpy as np
 import random
 from toolz import pipe, curry
-from autoaim import feature, Feature, helpers
+from autoaim import feature, Feature, helpers, Predictor
+import re
 
 data_path = os.path.abspath(__file__ + '/../../data')
 
+angle = [0,3,5,6,9,10,12,13,15,16,18,19,20,22,24,26,28,29,30,32,32,32,32,32,32,32,32,32,32,32,32,31,31,30,30,30,29,27,25,23,21,20,18,15,13,11,10,8,6,4,3,0,-1,-3,-5,-7,-9.5,-10,-13,-15,-18,-20,-20.5,-23,-24,-26,-29,-30,-31,-33,-35,-37,-38,-39,-39,-39,-39,-39,-39,-39,-39,-39,-38,-37,-36,-35,-34,-33,-32,-31,-30,-30,-29,-27,-26,-24,-23,-22,-21,-19.5,-17,-14,-12,-10,-9,-7.5,-5,-4,-3,-1,0,2,3,5,7,9.5,10,12,13,16,17,19,20,23,26,27,29.5,31,33,35,37,39,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,39.5,39,38,35,34,31,30,26,23,21,20,18,15,13,12,10,8,5,4,1,0,-4,-5,-7,-9,-11,-14,-15,-17,-19.5,-20.5,-23,-27,-29,-30,-31,-33,-35,-37,-39,-40,-40.5,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-41,-40,-40,-40,-39,-38,-37,-36,-34,-33,-32,-31,-30,-29,-28,-26,-24,-22,-21,-20,-19,-17,-16,-14,-13,-12,-11,-10,-9,-8,-7,-5,-4,-3,-2,-1,0,2,3,4,6,8,9.5,11,13,15,16,18,19.5,20,21,23,24,25,27,29,30,31,32,33,35,36,38,40,40,40,41,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42]
 
 class DataLoader():
 
@@ -37,10 +39,8 @@ class DataLoader():
         self.props = props
         header = self.generate_header()
         self.filename = filename
-        self.new_csv(self.join('lamp', 'train'), header)
-        self.new_csv(self.join('pair', 'train'), header)
-        self.new_csv(self.join('lamp', 'test'), header)
-        self.new_csv(self.join('pair', 'test'), header)
+        self.new_csv(self.join('angle', 'train'), header)
+        self.new_csv(self.join('angle', 'test'), header)
         for dataset in datasets:
             dataset_path = data_path+'/'+dataset
             files = [x for x in os.listdir(
@@ -51,59 +51,27 @@ class DataLoader():
             self.load_images('test', dataset, files[cut_len:-1])
 
     def load_images(self, data_type, dataset, images):
+        global angle
         for image in images:
             feature = self.load_img(dataset, image)
             if feature:
-                for lamp in feature.lamps:
-                    row = [x for x in lamp.x.values()] + [int(lamp.bingo)]
-                    self.append_csv(self.join('lamp', data_type), row)
-                for pair in feature.pairs:
-                    row = pair.x + [int(pair.bingo)]
-                    self.append_csv(self.join('pair', data_type), row)
+                pair = feature.pairs[0]
+                row = pair.anglex + [pair.angle]
+                self.append_csv(self.join('angle', data_type), row)
 
     def load_img(self, dataset, image):
         '''return `exit`'''
-        props = self.props + ['bounding_rect']
-        # load labels
-        labels = self.load_label(dataset, image)
+        i = int(re.findall(r"\d+",os.path.splitext(image)[0])[0])
+        print(i)
         # load image
         img_path = os.path.join(data_path, dataset, image)
         img = helpers.load(img_path)
-        # calc features
-        feature = Feature(img)
-        feature.calc(props)
-        feature.calc_pairs()
-        # label the lamps
-        lamps = feature.lamps
-        pairs = feature.pairs
-        for lamp in lamps:
-            lamp.bingo = False
-            for labeled_lamp in labels[0]:
-                if self.__is_in(lamp.bounding_rect, labeled_lamp):
-                    lamp.bingo = True
-                    break
-        for pair in pairs:
-            pair.bingo = 0
-            for labeled_pair in labels[1]:
-                if self.__is_in(pair.bounding_rect, labeled_pair):
-                    pair.bingo = 1
-                    break
-            for labeled_pair in labels[2]:
-                if self.__is_in(pair.bounding_rect, labeled_pair):
-                    pair.bingo = 2
-                    break
-        print(
-            '{}/{}: {} lamps, {} pairs'
-            .format(dataset, image, len(lamps), len(pairs))
-        )
-        if self.debug:
-            pipe(img.copy(),
-                 # feature.draw_contours,
-                 feature.draw_bounding_rects,
-                 self.draw_labeled_lamps()(lamps),
-                 self.draw_bingo_lamps()(feature),
-                 helpers.showoff
-                 )
+        # predictor
+        predictor = Predictor('weight9.csv', 'pair_weight.csv','angle_weight.csv')
+        feature = predictor.predict(img, mode='angle', debug=False,timeout=1000)
+        if len(feature.pairs)>0:
+            feature.pairs = [feature.pairs[0]]
+            feature.pairs[0].angle = angle[i]/90
         return feature
 
     def load_label(self, dataset, file):
@@ -116,7 +84,7 @@ class DataLoader():
         try:
             tree = ET.ElementTree(file=label_path)
         except:
-            print('>  Label file "{}"  not found!'.format(label_path))
+            # print('>  Label file "{}"  not found!'.format(label_path))
             return labels
         root = tree.getroot()
 
@@ -211,7 +179,7 @@ class DataLoader():
 if __name__ == '__main__':
     props = feature.enabled_props
     datasets = [
-        'test12',
+        'test17',
     ]
-    dataloader = DataLoader(debug=False)
+    dataloader = DataLoader(debug=True)
     dataloader.load_datasets(datasets, props)
