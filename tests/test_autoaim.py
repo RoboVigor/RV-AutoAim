@@ -58,7 +58,8 @@ class AutoAimTestSuite(unittest.TestCase):
         for i in range(0, 5, 1):
             img_url = 'data/test8/img{}.jpg'.format(i)
             img = helpers.load(img_url)
-            predictor = Predictor('weight8.csv', 'pair_weight.csv')
+            predictor = Predictor(
+                'weight9.csv', 'pair_weight.csv', 'angle_weight.csv')
             feature = predictor.predict(img, mode='red', debug=False)
             lamps = feature.lamps
             lamps = [x for x in lamps if x.y > 0.5]

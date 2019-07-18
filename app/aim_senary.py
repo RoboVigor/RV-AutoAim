@@ -63,6 +63,7 @@ def pid_control(target, feedback, pid_args=None):
 def load_img():
     # set up camera
     global aim, new_img, ww, hh
+    i = 0
     camera = autoaim.Camera(0)
     capture = camera.capture
     capture.set(3, ww)
@@ -71,6 +72,10 @@ def load_img():
     capture.set(cv2.CAP_PROP_EXPOSURE, 1)
     while aim:
         suc, new_img = capture.read()
+        img = new_img
+        cv2.imwrite(os.path.abspath(__file__ + '/../../data/capture')+'/img'+str(i)+'.jpg', img)
+        i += 1
+
 
 
 def send_packet():

@@ -72,25 +72,25 @@ def pid_control(target, feedback, pid_args=None):
     return pid_output_p+pid_output_i+pid_output_d
 
 
-# def load_img():
-#     # set up camera
-#     global new_img, aim
-#     for i in range(200, 700, 1):
-#         img_url = 'data/test13/{}.jpeg'.format(i)
-#         print('Load {}'.format(img_url))
-#         new_img = autoaim.helpers.load(img_url)
-#         cv2.waitKey(20)
-#     aim = False
-
 def load_img():
     # set up camera
     global new_img, aim
-    for i in range(0, 336, 1):
-        img_url = 'data/test12/img{}.jpg'.format(i)
+    for i in range(200, 700, 1):
+        img_url = 'data/test13/{}.jpeg'.format(i)
         print('Load {}'.format(img_url))
         new_img = autoaim.helpers.load(img_url)
-        cv2.waitKey(100)
+        cv2.waitKey(20)
     aim = False
+
+# def load_img():
+#     # set up camera
+#     global new_img, aim
+#     for i in range(0, 336, 1):
+#         img_url = 'data/test12/img{}.jpg'.format(i)
+#         print('Load {}'.format(img_url))
+#         new_img = autoaim.helpers.load(img_url)
+#         cv2.waitKey(100)
+#     aim = False
 
 
 def send_packet():
@@ -279,10 +279,10 @@ def aim_enemy():
                     print(str(fpscount)+': target changed')
 
                 ##### set kinestate #####
-                x = target_yfix[0]/ww - 0.5
-                y = target_yfix[1]/hh - 0.5
-                # x = target_yfix_pred[0]/ww - 0.5
-                # y = target_yfix_pred[1]/hh - 0.5
+                # x = target_yfix[0]/ww - 0.5
+                # y = target_yfix[1]/hh - 0.5
+                x = target_yfix_pred[0]/ww - 0.5
+                y = target_yfix_pred[1]/hh - 0.5
 
                 # avarage value
                 x = moving_average(moving_average_list[0], x)
@@ -325,11 +325,12 @@ def aim_enemy():
                     feature.draw_pair_bounding_text()(
                         lambda l: '{:.2f}'.format(l.y)
                     ),
-                    curry(feature.draw_centers)(center=(ww/2, hh/2)),
+                    # curry(feature.draw_centers)(center=(ww/2, hh/2)),
                     # curry(feature.draw_centers)(center=target_yfix),
                     # curry(feature.draw_centers)(center=target_yfix_pred),
-                    feature.draw_target()(target_yfix_pred),
-                    feature.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
+                    curry(feature.draw_centers)(center=((x+0.5)*ww, (y+0.5)*hh)),
+                    feature.draw_target()(target_yfix),
+                    feature.draw_target()((ww/2, hh/2)),
                     feature.draw_fps()(int(fps)),
                     curry(autoaim.helpers.showoff)(timeout=1, update=True)
                 )
