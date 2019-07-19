@@ -285,21 +285,21 @@ class Feature():
                     h2 = left.bounding_rect[3]
                 pair.bounding_rect = (x1,y1,x2-x1+w2,y2-y1+h2)
                 x,y,w,h = pair.bounding_rect
-                # if w/h > 8 or w/h < 2:
-                    # continue
+                if w/h > 8 or w/h < 2:
+                    continue
                 pair.ratio = w/((h1+h2)/2)
                 pair.x = [
-                    abs(pair.ratio-3.75),
-                    abs(pair.ratio-6.25),
-                    (y2-y1)/200,
+                    (pair.ratio-3.75),
+                    (pair.ratio-6.25),
+                    abs(y2-y1)/200,
                     abs(w2-w1)/200,
                     abs(h2-h1)/200,
                     abs(left.rotated_rect_angle-90)/90,
                     abs(right.rotated_rect_angle-90)/90,
-                    abs(left.rotated_rect_angle-right.rotated_rect_angle)/90,
+                    abs(left.rotated_rect_angle-right.rotated_rect_angle)/90
                 ]
                 pair.anglex = [
-                    # (y2-y1)/200,
+                    (y2-y1)/200,
                     (left.rotated_rect_angle-90)/90,
                     (right.rotated_rect_angle-90)/90,
                     w1/w2,
@@ -395,9 +395,9 @@ class Feature():
             rect = pair.bounding_rect
             label = pair.label
             x, y, w, h = rect
-            if label == 1:
+            if label == 0:
                 cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 200), 2)
-            if label == 2:
+            if label == 1:
                 cv2.rectangle(img, (x, y), (x+w, y+h), (0, 200, 0), 2)
         return img
 
@@ -429,7 +429,7 @@ calcdict = {
         'bounding_rect_ratio': lambda l: l.bounding_rect_ratio
     },
     'rotated_rects': {
-        'rotated_rect_angle': lambda l: abs(l.rotated_rect_angle-90)/90,
+        'rotated_rect_angle': lambda l: abs(l.rotated_rect_angle-90)/90
     },
     'greyscales': {
         'greyscale': lambda l: l.greyscale/255,
@@ -449,8 +449,8 @@ enabled_props = [
 
 
 if __name__ == '__main__':
-    for i in range(1, 200, 1):
-        img_url = 'data/test11/img{}.jpg'.format(i)
+    for i in range(135, 250, 1):
+        img_url = 'data/test12/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
         feature = Feature(img)
@@ -472,8 +472,7 @@ if __name__ == '__main__':
             # feature.draw_rotated_rects,
             #  feature.draw_ellipses,
             feature.draw_texts()(
-                # lambda l: '{:.2f}'.format(l.bounding_rect_area)
-                lambda l: '{:.3f}'.format(l.x['point_area'])
+                lambda l: '{:.2f}'.format(l.bounding_rect_area)
             ),
             helpers.showoff
         )

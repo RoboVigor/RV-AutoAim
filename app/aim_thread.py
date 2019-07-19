@@ -15,6 +15,9 @@ hh = 720
 # ww = 640
 # hh = 360
 
+def miao(val,minval,maxval):
+    return min(max(val,minval),maxval)
+
 
 def predict_movement(last, new):
     del last[0]
@@ -86,7 +89,7 @@ def send_packet():
 
 
 def aim_enemy():
-    def aim(serial=True, lamp_weight='weight9.csv', pair_weight='pair_weight.csv', mode='red', gui_update=None):
+    def aim(serial=True, lamp_weight='weight9.csv', pair_weight='pair_weight.csv', angle_weight='angle_weight.csv', mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # config
@@ -97,7 +100,7 @@ def aim_enemy():
         threshold_position_changed = 70
         # autoaim
         track_state = 1  # 0:tracking, 1:lost, 2:changed
-        predictor = autoaim.Predictor(lamp_weight, pair_weight)
+        predictor = autoaim.Predictor(lamp_weight, pair_weight, angle_weight)
         last_pair = None
         pair = None
         moving_average_list = ([0, 0, 0], [0, 0, 0])
@@ -142,11 +145,12 @@ def aim_enemy():
             ##### analysis target #####
 
             # estimate camera movement
-            _ = output[0]
-            camera_movement = (
-                254.28*_*_*_-175.89*_*_+0.4252*_,
-                0
-            )
+            _x = output[0]
+            camera_movement_x = 76.498*_x*_x + 9.5919*_x
+            camera_movement_y = 0
+            if _x<0:
+                camera_movement_x *= -1
+            camera_movement = (camera_movement_x,camera_movement_y)
 
             # logic of losing target
             if len(lamps) == 0:
@@ -173,22 +177,17 @@ def aim_enemy():
                     # get track score
                     for pair in pairs:
                         x1, y1, w1, h1 = pair.bounding_rect
-                        x_diff = abs(
-                            target[0]+camera_movement[0]-x1)
-                        y_diff = abs(
-                            target[1]+camera_movement[1]-y1)
-                        distance = x_diff*x_diff + y_diff*y_diff
-                        if distance < min_distance:
-                            min_distance = distance
-                            close_score = pair.y
-                            close_pair = pair
+                        x_diff = abs(target[0]-camera_movement[0]-x1)
+                        y_diff = abs(target[1]-camera_movement[1]-y1)
+                        target_distance = x_diff*x_diff + y_diff*y_diff
+                        x_diff = abs(x1-ww/2)
+                        y_diff = abs(y1-hh/2)
+                        center_distance = x_diff*x_diff + y_diff*y_diff
+                        area = w1*h1
+                        print(target_distance,center_distance,area,pair.angle)
                     # decide the pair
                     last_pair = pair
-                    if top_score - close_score > threshold_target_switch:
-                        pair = pairs[-1]
-                        track_state = 2
-                    else:
-                        pair = close_pair
+                    pair = pairs[-1]
                     x, y, w, h = pair.bounding_rect
                     feature.pairs = [pair]
                 elif len(pairs) == 1:
@@ -278,6 +277,7 @@ def aim_enemy():
             ##### serial output #####
             print(serial)
             if serial:
+                # output = (miao(float(x*4),-0.3,0.3), miao(float(-y*3),-0.3,0.3))
                 output = (float(x*4), float(-y*3))
                 new_packet = autoaim.telegram.pack(
                     0x0401, [float(x*4), float(-y*3), bytes([shoot_it])], seq=packet_seq)

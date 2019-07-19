@@ -82,16 +82,31 @@ class DataLoader():
                 if self.__is_in(lamp.bounding_rect, labeled_lamp):
                     lamp.bingo = True
                     break
+        throw_false = 0
+        _pairs = []
         for pair in pairs:
-            pair.bingo = 0
+            pair.bingo = 2
             for labeled_pair in labels[1]:
                 if self.__is_in(pair.bounding_rect, labeled_pair):
-                    pair.bingo = 1
+                    pair.bingo = 0
                     break
             for labeled_pair in labels[2]:
                 if self.__is_in(pair.bounding_rect, labeled_pair):
+                    pair.bingo = 1
+                    break
+            for labeled_pair in labels[3]:
+                if self.__is_in(pair.bounding_rect, labeled_pair):
                     pair.bingo = 2
                     break
+            for labeled_pair in labels[4]:
+                if self.__is_in(pair.bounding_rect, labeled_pair):
+                    pair.bingo = 2
+                    break
+            if pair.bingo == 2:
+                throw_false += 1
+            if throw_false % 3 == 0 or pair.bingo < 2:
+                _pairs += [pair]
+            feature.pairs = _pairs
         print(
             '{}/{}: {} lamps, {} pairs'
             .format(dataset, image, len(lamps), len(pairs))
@@ -107,7 +122,7 @@ class DataLoader():
         return feature
 
     def load_label(self, dataset, file):
-        labels = [[], [], []]  # lamp, small, large
+        labels = [[] for i in range(5)]  # lamp, small, large
 
         # load xml
         label = os.path.splitext(file)[0]
@@ -133,6 +148,10 @@ class DataLoader():
                     labels[1].append(rect)
                 elif name == 'pair2':
                     labels[2].append(rect)
+                if name == 'notpair1':
+                    labels[3].append(rect)
+                if name == 'notpair2':
+                    labels[4].append(rect)
         return labels
 
     def __is_in(self, rect, labeled_rect):
@@ -212,6 +231,7 @@ if __name__ == '__main__':
     props = feature.enabled_props
     datasets = [
         'test12',
+        'test18',
     ]
     dataloader = DataLoader(debug=False)
     dataloader.load_datasets(datasets, props)

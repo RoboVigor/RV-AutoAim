@@ -69,13 +69,14 @@ class Predictor():
             x = np.array(pair.x + [1])
             y = x.dot(np.transpose(w_pair))
             y[1] += pair_cheat_boost
+            pair._y = y  # classification score
             pair.y = np.max(y)  # score
             pair.label = np.argmax(y)  # label
             anglex = np.array(pair.anglex + [1])
             angley = anglex.dot(np.transpose(w_angle))
-            pair.angle = angley[0]*90
+            pair.angle = angley[0]
         # lamp filter
-        f.pairs = [l for l in f.pairs if l.label == 1]
+        f.pairs = [l for l in f.pairs if l.label < 2]
         # debug
         if debug:
             pipe(
@@ -92,7 +93,7 @@ class Predictor():
                 #     lambda l: '{:.2f}'.format(l.y)
                 # ),
                 f.draw_pair_bounding_text()(
-                    lambda l: '{:.2f}'.format(l.angle)
+                    lambda l: '{:.2f}'.format(l.x[7])
                 ),
                 curry(helpers.showoff)(timeout=timeout, update=True)
             )
@@ -100,11 +101,11 @@ class Predictor():
 
 
 if __name__ == '__main__':
-    for i in range(1200, 1500, 1):
-        img_url = 'data/test14/img{}.jpg'.format(i)
+    for i in range(120, 335, 1):
+        img_url = 'data/test12/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
 
         predictor = Predictor(
             'weight9.csv', 'pair_weight.csv', 'angle_weight.csv')
-        predictor.predict(img, mode='red', timeout=200)
+        predictor.predict(img, mode='red', timeout=500)

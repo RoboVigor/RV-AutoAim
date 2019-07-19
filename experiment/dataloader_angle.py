@@ -71,7 +71,7 @@ class DataLoader():
         feature = predictor.predict(img, mode='angle', debug=False,timeout=1000)
         if len(feature.pairs)>0:
             feature.pairs = [feature.pairs[0]]
-            feature.pairs[0].angle = angle[i]/90
+            feature.pairs[0].angle = angle[i]
         return feature
 
     def load_label(self, dataset, file):
