@@ -89,11 +89,8 @@ class Predictor():
                 #     lambda l: '{:.2f}'.format(l.y)
                 # ),
                 f.draw_pair_bounding_rects,
-                # f.draw_pair_bounding_text()(
-                #     lambda l: '{:.2f}'.format(l.y)
-                # ),
                 f.draw_pair_bounding_text()(
-                    lambda l: '{:.2f}'.format(l.x[7])
+                    lambda l: '{:.2f}'.format(l.y)
                 ),
                 curry(helpers.showoff)(timeout=timeout, update=True)
             )
@@ -101,11 +98,10 @@ class Predictor():
 
 
 if __name__ == '__main__':
-    for i in range(120, 335, 1):
+    for i in range(0, 300, 1):
         img_url = 'data/test12/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-
         predictor = Predictor(
             'weight9.csv', 'pair_weight.csv', 'angle_weight.csv')
         predictor.predict(img, mode='red', timeout=500)

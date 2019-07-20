@@ -289,8 +289,8 @@ class Feature():
                     continue
                 pair.ratio = w/((h1+h2)/2)
                 pair.x = [
-                    (pair.ratio-3.75),
-                    (pair.ratio-6.25),
+                    abs(pair.ratio-3.17),
+                    abs(pair.ratio-6.2),
                     abs(y2-y1)/200,
                     abs(w2-w1)/200,
                     abs(h2-h1)/200,

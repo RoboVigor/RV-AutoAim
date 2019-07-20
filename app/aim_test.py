@@ -41,10 +41,11 @@ def predict_clear(last):
 
 
 def moving_average(last, new):
-    r = sum(last)/len(last)*0.25+new*0.75
+    # r = sum(last)/len(last)*0.25+new*0.75
     del last[0]
     last += [new]
-    return r
+    # return r
+    return new
 
 
 def dead_region(val, range):
@@ -73,25 +74,14 @@ def pid_control(target, feedback, pid_args=None):
     pid_output_d = (error - last_error)*d
     return pid_output_p+pid_output_i+pid_output_d
 
-
-# def load_img():
-#     # set up camera
-#     global new_img, aim
-#     for i in range(200, 700, 1):
-#         img_url = 'data/test18/{}.jpeg'.format(i)
-#         print('Load {}'.format(img_url))
-#         new_img = autoaim.helpers.load(img_url)
-#         cv2.waitKey(20)
-#     aim = False
-
 def load_img():
     # set up camera
     global new_img, aim
-    for i in range(0, 300, 1):
+    for i in range(0, 335, 1):
         img_url = 'data/test21/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         new_img = autoaim.helpers.load(img_url)
-        cv2.waitKey(50)
+        cv2.waitKey(100)
     aim = False
 
 
@@ -117,7 +107,7 @@ def aim_enemy():
         threshold_shoot = 0.03
         threshold_position_changed = 70
         # autoaim
-        track_state = 1  # 0:tracking, 1:lost, 2:changed
+        track_state = 1  # 0:tracking, 1:lost
         predictor = autoaim.Predictor(lamp_weight, pair_weight, angle_weight)
         last_pair = None
         pair = None
@@ -186,23 +176,31 @@ def aim_enemy():
                 x, y, w, h = (0, 0, 0, 0)
                 pair = None
                 if len(pairs) > 1:
-                    track_state = 0
                     pair = None
                     # get track score
+                    pairid = 0
                     for pair in pairs:
+                        pairid += 1
                         x1, y1, w1, h1 = pair.bounding_rect
-                        x_diff = abs(target[0]-camera_movement[0]-x1)
-                        y_diff = abs(target[1]-camera_movement[1]-y1)
-                        target_distance = (x_diff*x_diff + y_diff*y_diff)/10000
-                        x_diff = abs(x1-ww/2)
-                        y_diff = abs(y1-hh/2)
-                        center_distance = (x_diff*x_diff + y_diff*y_diff)/10000
-                        area = (w1*h1)/4000
-                        angle = abs(pair.angle)/3
-                        label = (pair.label-3)*100
-                        # score = -target_distance+area-angle-label+pair.y
-                        score = pair.y-target_distance-angle
+                        x_diff = abs(target[0]-camera_movement[0]-(x1+w1/2))
+                        y_diff = abs(target[1]-camera_movement[1]-(y1+h1/2))
+                        target_distance = -(x_diff*x_diff + y_diff*y_diff)/5000
+                        x_diff = abs(x1+w1/2-ww/2)
+                        y_diff = abs(y1+h1/2-hh/2)
+                        center_distance = -(x_diff*x_diff + y_diff*y_diff)/5000
+                        distance = h1/30
+                        angle = -abs(pair.angle)/35
+                        label = pair.label*-2
+                        score = 0
+                        if track_state == 0:
+                            score = pair.y*5+target_distance+label+distance
+                        else:
+                            score = pair.y*5+center_distance+label+distance+angle
                         pair.score = score
+                        pair.pairid = pairid
+                        # print([pairid, pair.y, target_distance, angle,label, distance, score])
+                    # reset track state
+                    track_state = 0
                     # decide the pair
                     pairs = sorted(pairs,key=lambda x:x.score)
                     last_pair = pair
@@ -214,9 +212,11 @@ def aim_enemy():
                     track_state = 0
                     last_pair = pair
                     pair = pairs[0]
+                    pair.score = 6.66
+                    pair.pairid = 1
                     x, y, w, h = pair.bounding_rect
                 elif len(lamps) > 1:
-                    track_state = 2
+                    track_state = 1
                     x1, y1, w1, h1 = lamps[-1].bounding_rect
                     x2, y2, w2, h2 = lamps[-2].bounding_rect
                     x = (x1+x2)/2
@@ -224,7 +224,7 @@ def aim_enemy():
                     w = (w1+w2)/2
                     h = (h1+h2)/2
                 elif len(lamps) == 1:
-                    track_state = 2
+                    track_state = 1
                     x, y, w, h = lamps[0].bounding_rect
 
                 # detect pair changed
@@ -233,7 +233,7 @@ def aim_enemy():
                     over_threshold = _ > threshold_target_changed
                     type_changed = not pair.label == last_pair.label
                     if over_threshold or type_changed:
-                        track_state = 2
+                        track_state = 1
 
                 # distance
                 if ww == 1280:
@@ -272,11 +272,7 @@ def aim_enemy():
                 if track_state == 1:
                     predict_clear(predict_list[0])
                     predict = (0, 0)
-                    print(str(fpscount)+': target lost')
-                elif track_state == 2:
-                    predict_clear(predict_list[0])
-                    predict = (0, 0)
-                    print(str(fpscount)+': target changed')
+                    print('Target lost')
 
                 ##### set kinestate #####
                 x = target_yfix[0]/ww - 0.5
@@ -295,14 +291,13 @@ def aim_enemy():
                     shoot_it = 0
 
             ##### serial output #####
-            print(serial)
             if serial:
-                # output = (miao(float(x*4),-0.3,0.3), miao(float(-y*3),-0.3,0.3))
-                output = (float(x*4), float(-y*3))
-                new_packet = autoaim.telegram.pack(
-                    0x0401, [float(x*4), float(-y*3), bytes([shoot_it])], seq=packet_seq)
-                packet_seq = (packet_seq+1) % 256
+                output = [float(x*3), float(-y*2.5)]
+                output = [miao(output[0], -0.8, 0.8),miao(output[1], -0.8, 0.8)]
                 print(output)
+                new_packet = autoaim.telegram.pack(
+                    0x0401, [*output, bytes([shoot_it])], seq=packet_seq)
+                packet_seq = (packet_seq+1) % 256
 
             ##### calculate fps #####
             fpscount = fpscount % 10 + 1
@@ -326,7 +321,7 @@ def aim_enemy():
                     #     lambda l: '{:.2f}'.format(l.bounding_rect[3])),
                     feature.draw_pair_bounding_rects,
                     feature.draw_pair_bounding_text()(
-                        lambda l: '{:.2f}'.format(l.y)
+                        lambda l: '{:.2f}'.format(l.angle)
                     ),
                     curry(feature.draw_centers)(center=(ww/2, hh/2)),
                     # curry(feature.draw_centers)(center=target_yfix_pred),
@@ -338,19 +333,8 @@ def aim_enemy():
     return curry(aim)
 
 if __name__ == '__main__':
-
-    def gui_update(x): return x % 10 == 0
-    if len(sys.argv) > 1 and sys.argv[1] == 'production':
-        threading.Thread(target=load_img).start()
-        threading.Thread(target=send_packet).start()
-        threading.Thread(target=aim_enemy()(
-            serial=True,
-            mode='red',
-            gui_update=None)).start()
-    else:
-        threading.Thread(target=load_img).start()
-        threading.Thread(target=aim_enemy()(
-            serial=False,
-            mode='red',
-            gui_update=lambda x: True)).start()
-    print("THE END.")
+    threading.Thread(target=load_img).start()
+    threading.Thread(target=aim_enemy()(
+        serial=False,
+        mode='red',
+        gui_update=lambda x: True)).start()
