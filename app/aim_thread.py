@@ -85,7 +85,7 @@ def send_packet():
         packet = new_packet
         new_packet = None
         # print(packet)
-        autoaim.telegram.send(packet, port='/dev/ttyTHS2')
+        autoaim.telegram.send(packet, port='/dev/ttyUSB0')
 
 
 def aim_enemy():
@@ -170,25 +170,27 @@ def aim_enemy():
                 if len(pairs) > 1:
                     track_state = 0
                     pair = None
-                    top_score = pairs[-1].y
-                    min_distance = ww*ww+hh*hh
-                    close_score = 0
-                    close_pair = None
                     # get track score
                     for pair in pairs:
                         x1, y1, w1, h1 = pair.bounding_rect
                         x_diff = abs(target[0]-camera_movement[0]-x1)
                         y_diff = abs(target[1]-camera_movement[1]-y1)
-                        target_distance = x_diff*x_diff + y_diff*y_diff
+                        target_distance = (x_diff*x_diff + y_diff*y_diff)/10000
                         x_diff = abs(x1-ww/2)
                         y_diff = abs(y1-hh/2)
-                        center_distance = x_diff*x_diff + y_diff*y_diff
-                        area = w1*h1
-                        print(target_distance,center_distance,area,pair.angle)
+                        center_distance = (x_diff*x_diff + y_diff*y_diff)/10000
+                        area = (w1*h1)/4000
+                        angle = abs(pair.angle)/3
+                        label = (pair.label-3)*100
+                        # score = -target_distance+area-angle-label+pair.y
+                        score = pair.y-target_distance-angle
+                        pair.score = score
                     # decide the pair
+                    pairs = sorted(pairs,key=lambda x:x.score)
                     last_pair = pair
                     pair = pairs[-1]
                     x, y, w, h = pair.bounding_rect
+                    feature.pairs = [p for p in pairs if p.label==0]
                     feature.pairs = [pair]
                 elif len(pairs) == 1:
                     track_state = 0
@@ -280,7 +282,7 @@ def aim_enemy():
                 # output = (miao(float(x*4),-0.3,0.3), miao(float(-y*3),-0.3,0.3))
                 output = (float(x*4), float(-y*3))
                 new_packet = autoaim.telegram.pack(
-                    0x0401, [float(x*4), float(-y*3), bytes([shoot_it])], seq=packet_seq)
+                    0x0401, [float(x*3), float(-y*2.5), bytes([shoot_it])], seq=packet_seq)
                 packet_seq = (packet_seq+1) % 256
                 print(output)
 

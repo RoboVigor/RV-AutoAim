@@ -9,7 +9,7 @@ def rotate(degree):
     seq = (seq+1) % 256
     packet = autoaim.telegram.pack(
         0x0401, [float(degree), 0.0, bytes([0])], seq=seq)
-    autoaim.telegram.send(packet, port='/dev/ttyTHS2')
+    autoaim.telegram.send(packet, port='/dev/ttyUSB0')
     cv2.waitKey(20)
 
 

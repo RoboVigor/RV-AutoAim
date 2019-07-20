@@ -103,7 +103,7 @@ def send_packet():
             continue
         packet = new_packet
         new_packet = None
-        autoaim.telegram.send(packet, port='/dev/ttyTHS2')
+        autoaim.telegram.send(packet, port='/dev/ttyUSB0')
 
 
 def aim_enemy():
