@@ -1,0 +1,4 @@
+#!/bin/sh -e
+echo "Link Start! \n$(date)"> /tmp/rc.local.log
+su - tencent -c 'screen -dmS "Autoaim" bash ~/RV-AutoAim/scripts/aimred.sh'
+exit 0

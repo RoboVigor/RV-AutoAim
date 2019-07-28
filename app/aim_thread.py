@@ -327,20 +327,24 @@ def aim_enemy():
 
 
 if __name__ == '__main__':
-
-    def gui_update(x): return x % 10 == 0
-    if len(sys.argv) > 1 and sys.argv[1] == 'production':
-        threading.Thread(target=load_img).start()
-        threading.Thread(target=send_packet).start()
-        threading.Thread(target=aim_enemy()(
-            serial=True,
-            mode='red',
-            gui_update=None)).start()
+    if len(sys.argv) > 2:
+        target_color = sys.argv[2]
+        print(target_color)
+        def gui_update(x): return x % 10 == 0
+        if sys.argv[1] == 'production':
+            threading.Thread(target=load_img).start()
+            threading.Thread(target=send_packet).start()
+            threading.Thread(target=aim_enemy()(
+                serial=True,
+                mode=target_color,
+                gui_update=None)).start()
+        else:
+            threading.Thread(target=load_img).start()
+            threading.Thread(target=send_packet).start()
+            threading.Thread(target=aim_enemy()(
+                serial=True,
+                mode=target_color,
+                gui_update=lambda x: x % 10 == 0)).start()
+        print("THE END.")
     else:
-        threading.Thread(target=load_img).start()
-        threading.Thread(target=send_packet).start()
-        threading.Thread(target=aim_enemy()(
-            serial=True,
-            mode='red',
-            gui_update=lambda x: x % 10 == 0)).start()
-    print("THE END.")
+        print("Zha hui shier? No target set.")
