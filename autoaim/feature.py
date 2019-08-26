@@ -156,8 +156,8 @@ class Feature():
     def apply_preprocess(self, mat):
         mat = mat.copy()
         kernel = np.ones((5, 5), np.uint8)
-        mat = cv2.dilate(mat, kernel, iterations=1)
-        mat = cv2.erode(mat, kernel, iterations=1)
+        # mat = cv2.dilate(mat, kernel, iterations=1)
+        # mat = cv2.erode(mat, kernel, iterations=1)
         # cv2.imshow('Input', mat)
 
         return mat

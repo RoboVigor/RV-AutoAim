@@ -30,11 +30,17 @@ def predict_clear(last):
 
 
 def moving_average(last, new):
-    # r = sum(last)/len(last)*0.25+new*0.75
-    del last[0]
-    last += [new]
-    # return r
-    return new
+    empty = False
+    for x in last:
+        if not x == 0:
+            empty = True
+    if empty:
+        for i in range(len(last)):
+            last[i] = new
+    else:
+        del last[0]
+        last += [new]
+    return sum(last)/len(last)
 
 
 def dead_region(val, range):
@@ -88,15 +94,14 @@ def send_packet():
         # print(packet)
         autoaim.telegram.send(packet, port='/dev/ttyUSB0')
 
-
 def aim_enemy():
     def aim(serial=True, lamp_weight='weight9.csv', pair_weight='pair_weight.csv', angle_weight='angle_weight.csv', mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # config
-        threshold_target_switch = 2
         threshold_target_changed = 0.5
-        distance_to_laser = 8
+        distance_to_laser = 12
+        x_fix = -15
         threshold_shoot = 0.03
         threshold_position_changed = 70
         # autoaim
@@ -104,10 +109,11 @@ def aim_enemy():
         predictor = autoaim.Predictor(lamp_weight, pair_weight, angle_weight)
         last_pair = None
         pair = None
-        moving_average_list = ([0, 0, 0], [0, 0, 0])
-        predict_list = ([0 for i in range(7)], [0 for i in range(7)])
+        height_record_list = ([0 for i in range(10)])
+        predict_list = ([0 for i in range(1)], [0 for i in range(1)])
         y_fix = 0
-        predict = (0, 0)
+        predict1 = (0, 0)
+        predict2 = (0, 0)
         packet_seq = 0
         shoot_it = 0
         target = (ww/2, hh/2)
@@ -115,6 +121,7 @@ def aim_enemy():
         target_yfix_pred = (ww/2, hh/2)
         output = (0, 0)
         camera_movement = (0, 0)
+
         # fps
         fps_last_timestamp = time.time()
         fpscount = 0
@@ -225,22 +232,32 @@ def aim_enemy():
                     _ = abs(last_pair.y-pair.y)
                     over_threshold = _ > threshold_target_changed
                     type_changed = not pair.label == last_pair.label
-                    if over_threshold or type_changed:
+                    _1 = last_pair.bounding_rect[0] + last_pair.bounding_rect[2]/2
+                    _2 = pair.bounding_rect[0]+pair.bounding_rect[2]/2
+                    position_changed = abs(_1-_2) > threshold_position_changed
+                    if over_threshold or type_changed or position_changed:
                         track_state = 1
+
+                h = moving_average(height_record_list, h)
 
                 # distance
                 if ww == 1280:
-                    # d = 35.69*(h**-0.866)
-                    d = 27.578*(h**-0.841)
-                elif ww == 640:
-                    # d = 35.69*((h*2)**-0.866)
-                    d = 27.578*((h*2)**-0.841)
+                    # d = 106.56*(h**-1.127) # 0802早热身赛 (blue)
+                    # 英雄
+                    # if mode == 'blue':
+                    #     d = 73.7*(h**-0.972)
+                    # else:
+                    #     d = 72.472*(h**-1.027)
+                    # 步兵 (just for my robot)
+                    d = 257.28*(h**-1.257)
+
 
                 # antigravity
                 y_fix = 0
-                if d > 1.5:
-                    y_fix -= (1.07*d*d+2.65*d-6.28)/5.5*h
-                    # y_fix -= (1.0424*x*x*x-8.8525*x*x+26.35*x-18.786)/5.5*h
+                # y_fix -= (2.75*d*d -1.6845*d - 0.4286)/5.5*h # hero
+                y_fix -= min(1.4777*d*d + -3.532*d - 2.1818,8)/5.5*h # infantry
+                # y_fix -= min(1.4777*d*d + -3.532*d - 2.1818,8)/5.5*h # infantry
+                print(d, y_fix)
 
                 # distance between camera and barrel
                 y_fix -= h/5.5*distance_to_laser
@@ -248,34 +265,42 @@ def aim_enemy():
                 # set target
                 last_target = target
                 target = (x+w/2, y+h/2)
-                target_yfix = (x+w/2, y+h/2+y_fix)
+                target_yfix = (x+w/2+x_fix, y+h/2+y_fix)
 
                 # motion predict
-                predict = (
-                    predict_movement(
-                        predict_list[0],
-                        target[0] -
-                        (last_target[0]+camera_movement[0])
-                    ),
-                    0
-                )
-                target_yfix_pred = (target_yfix[0]+predict[0]*10, target_yfix[1])
+                if not predict1[0] == 0:
+                    lastPredict1 = predict1
+                    predict1 = (
+                        predict_movement(
+                            predict_list[0],
+                            target[0] - last_target[0]
+                        ),
+                        0
+                    )
+                    predict2 = (predict1[0]-lastPredict1[0],0)
+                else:
+                    predict1 = (
+                        predict_movement(
+                            predict_list[0],
+                            target[0] - last_target[0]
+                        ),
+                        0
+                    )
+                    predict2 = (0,0)
+
+                target_yfix_pred = (target_yfix[0]+predict1[0]*10+predict2[0]*5, target_yfix[1])
 
                 # update track state
                 if track_state == 1:
                     predict_clear(predict_list[0])
-                    predict = (0, 0)
+                    predict_clear(height_record_list)
                     print('Target lost')
 
                 ##### set kinestate #####
-                x = target_yfix[0]/ww - 0.5
-                y = target_yfix[1]/hh - 0.5
-                # x = target_yfix_pred[0]/ww - 0.5
-                # y = target_yfix_pred[1]/hh - 0.5
-
-                # avarage value
-                x = moving_average(moving_average_list[0], x)
-                y = moving_average(moving_average_list[1], y)
+                # x = target_yfix[0]/ww - 0.5
+                # y = target_yfix[1]/hh - 0.5
+                x = target_yfix_pred[0]/ww - 0.5
+                y = target_yfix_pred[1]/hh - 0.5
 
                 # decide to shoot
                 if abs(x)<threshold_shoot and abs(y)<threshold_shoot and track_state==0:
@@ -285,8 +310,8 @@ def aim_enemy():
 
             ##### serial output #####
             if serial:
-                output = [float(x*3), float(-y*2.5)]
-                output = [miao(output[0], -0.8, 0.8),miao(output[1], -0.8, 0.8)]
+                output = [float(x*5), float(-y*3.5)]
+                output = [miao(output[0], -1.5, 1.5),miao(output[1], -1.2, 1.2)]
                 print(output)
                 new_packet = autoaim.telegram.pack(
                     0x0401, [*output, bytes([shoot_it])], seq=packet_seq)
@@ -309,17 +334,17 @@ def aim_enemy():
                     # feature.binary_mat.copy(),
                     feature.draw_contours,
                     feature.draw_bounding_rects,
-                    # feature.draw_texts()(lambda l: '{:.2f}'.format(l.y)),
+                    feature.draw_texts()(lambda l: '{:.2f}'.format(l.bounding_rect[3])),
                     # feature.draw_texts()(
                     #     lambda l: '{:.2f}'.format(l.bounding_rect[3])),
                     feature.draw_pair_bounding_rects,
-                    feature.draw_pair_bounding_text()(
-                        lambda l: '{:.2f}'.format(l.angle)
-                    ),
+                    # feature.draw_pair_bounding_text()(
+                    #     lambda l: '{:.2f}'.format(l.angle)
+                    # ),
                     curry(feature.draw_centers)(center=(ww/2, hh/2)),
                     # curry(feature.draw_centers)(center=target_yfix_pred),
                     # feature.draw_target()(target_yfix_pred),
-                    feature.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
+                    # feature.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
                     feature.draw_fps()(int(fps)),
                     curry(autoaim.helpers.showoff)(timeout=1, update=True)
                 )

@@ -29,7 +29,7 @@ class DataLoader():
     # Dataset Function
     # ===================
 
-    def load_datasets(self, datasets, props, filename='test', cut=0.8):
+    def load_datasets(self, datasets, props, filename='infantry', cut=0.8):
         '''Example input:
         datasets = ['test0', 'test1', ...]
         props = ['contour', 'bounding_rect', ...]
@@ -94,14 +94,14 @@ class DataLoader():
                 if self.__is_in(pair.bounding_rect, labeled_pair):
                     pair.bingo = 1
                     break
-            for labeled_pair in labels[3]:
-                if self.__is_in(pair.bounding_rect, labeled_pair):
-                    pair.bingo = 2
-                    break
-            for labeled_pair in labels[4]:
-                if self.__is_in(pair.bounding_rect, labeled_pair):
-                    pair.bingo = 2
-                    break
+            # for labeled_pair in labels[3]:
+            #     if self.__is_in(pair.bounding_rect, labeled_pair):
+            #         pair.bingo = 2
+            #         break
+            # for labeled_pair in labels[4]:
+            #     if self.__is_in(pair.bounding_rect, labeled_pair):
+            #         pair.bingo = 2
+            #         break
             if pair.bingo == 2:
                 throw_false += 1
             if throw_false % 3 == 0 or pair.bingo < 2:
@@ -148,10 +148,10 @@ class DataLoader():
                     labels[1].append(rect)
                 elif name == 'pair2':
                     labels[2].append(rect)
-                if name == 'notpair1':
-                    labels[3].append(rect)
-                if name == 'notpair2':
-                    labels[4].append(rect)
+                # if name == 'notpair1':
+                    # labels[3].append(rect)
+                # if name == 'notpair2':
+                    # labels[4].append(rect)
         return labels
 
     def __is_in(self, rect, labeled_rect):

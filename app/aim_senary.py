@@ -68,7 +68,7 @@ def load_img():
     # set up camera
     global aim, new_img, ww, hh
     i = 0
-    camera = autoaim.Camera(0)
+    camera = autoaim.Camera(1)
     capture = camera.capture
     capture.set(3, ww)
     capture.set(4, hh)
@@ -343,7 +343,7 @@ if __name__ == '__main__':
             gui_update=None)).start()
     else:
         threading.Thread(target=load_img).start()
-        threading.Thread(target=send_packet).start()
+        # threading.Thread(target=send_packet).start()
         threading.Thread(target=aim_enemy()(
             serial=True,
             mode='red',
