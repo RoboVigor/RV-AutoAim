@@ -102,7 +102,7 @@ def send_packet():
 
 
 def aim_enemy():
-    def aim(serial=True, lamp_weight='weight9.csv', pair_weight='pair_weight.csv', mode='red', gui_update=None):
+    def aim(serial=True, lamp_weight='weights/lamp.csv', pair_weight='weights/pair.csv', angle_weight='weights/angle.csv', mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # experiment
@@ -112,7 +112,7 @@ def aim_enemy():
         nb_counter = 0
         result = []
         # autoaim
-        predictor = autoaim.Predictor(lamp_weight, pair_weight)
+        predictor = autoaim.Predictor(lamp_weight, pair_weight, angle_weight)
         x_last = [0, 0, 0]
         y_last = [0, 0, 0]
         x_pred = [0 for i in range(7)]

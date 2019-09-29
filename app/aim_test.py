@@ -95,7 +95,7 @@ def send_packet():
 
 
 def aim_enemy():
-    def aim(serial=True, lamp_weight='weight9.csv', pair_weight='pair_weight.csv', angle_weight='angle_weight.csv', mode='red', gui_update=None):
+    def aim(serial=True, lamp_weight='weights/lamp.csv', pair_weight='weights/pair.csv', angle_weight='weights/angle.csv', mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # config

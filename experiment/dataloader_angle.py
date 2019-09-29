@@ -67,7 +67,7 @@ class DataLoader():
         img_path = os.path.join(data_path, dataset, image)
         img = helpers.load(img_path)
         # predictor
-        predictor = Predictor('weight9.csv', 'pair_weight.csv','angle_weight.csv')
+        predictor = Predictor('weights/lamp.csv', 'weights/pair.csv', 'weights/angle.csv')
         aimmat = predictor.predict(img, mode='angle', debug=False,timeout=1000)
         if len(aimmat.pairs)>0:
             aimmat.pairs = [aimmat.pairs[0]]

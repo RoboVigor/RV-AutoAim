@@ -24,7 +24,8 @@ for iii in range(0, 300, 1):
     img_url = 'data/test11/img{}.jpg'.format(iii)
     print('Load {}'.format(img_url))
     img = autoaim.helpers.load(img_url)
-    predictor = autoaim.Predictor('weight9.csv', 'pair_weight.csv')
+    predictor = autoaim.Predictor(
+        'weights/lamp.csv', 'weights/pair.csv', 'weights/angle.csv')
     aimmat = predictor.predict(
         img, mode='red', debug=fpscount % 10 == 0, timeout=1)
     lamps = aimmat.lamps

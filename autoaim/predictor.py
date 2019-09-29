@@ -48,9 +48,9 @@ class Predictor():
             pair_cheat_boost = 1
         elif mode == 'old':
             f = AimMat(img,
-                        preprocess=False,
-                        channel=lambda c: c[1],
-                        binary_threshold_scale=lambda t: (255-t)*0.5+t)
+                       preprocess=False,
+                       channel=lambda c: c[1],
+                       binary_threshold_scale=lambda t: (255-t)*0.5+t)
         f.calc(self.props)
         # get x_keys
         x_keys = []
@@ -102,6 +102,6 @@ if __name__ == '__main__':
         img_url = 'data/test_fu_1/{}.jpeg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-        predictor = Predictor(
-            'weight9.csv', 'pair_weight.csv', 'angle_weight.csv')
+        predictor = Predictor('weights/lamp.csv',
+                              'weights/pair.csv', 'weights/angle.csv')
         predictor.predict(img, mode='blue', timeout=500)

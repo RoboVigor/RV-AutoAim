@@ -17,7 +17,7 @@ import random
 from toolz import pipe, curry
 from autoaim import aimmat, AimMat, helpers
 
-data_path = os.path.abspath(__file__ + '/../../data')
+data_path = os.path.abspath(__file__ + '/../..')
 
 
 class DataLoader():

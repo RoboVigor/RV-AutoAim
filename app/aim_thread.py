@@ -15,8 +15,9 @@ hh = 720
 # ww = 640
 # hh = 360
 
-def miao(val,minval,maxval):
-    return min(max(val,minval),maxval)
+
+def miao(val, minval, maxval):
+    return min(max(val, minval), maxval)
 
 
 def predict_movement(last, new):
@@ -94,8 +95,9 @@ def send_packet():
         # print(packet)
         autoaim.telegram.send(packet, port='/dev/ttyUSB0')
 
+
 def aim_enemy():
-    def aim(serial=True, lamp_weight='weight9.csv', pair_weight='pair_weight.csv', angle_weight='angle_weight.csv', mode='red', gui_update=None):
+    def aim(serial=True, lamp_weight='weights/lamp.csv', pair_weight='weights/pair.csv', angle_weight='weights/angle.csv', mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # config
@@ -156,9 +158,9 @@ def aim_enemy():
             _x = output[0]
             camera_movement_x = 76.498*_x*_x + 9.5919*_x
             camera_movement_y = 0
-            if _x<0:
+            if _x < 0:
                 camera_movement_x *= -1
-            camera_movement = (camera_movement_x,camera_movement_y)
+            camera_movement = (camera_movement_x, camera_movement_y)
 
             # logic of losing target
             if len(lamps) == 0:
@@ -202,11 +204,11 @@ def aim_enemy():
                     # reset track state
                     track_state = 0
                     # decide the pair
-                    pairs = sorted(pairs,key=lambda x:x.score)
+                    pairs = sorted(pairs, key=lambda x: x.score)
                     last_pair = pair
                     pair = pairs[-1]
                     x, y, w, h = pair.bounding_rect
-                    aimmat.pairs = [p for p in pairs if p.label==0]
+                    aimmat.pairs = [p for p in pairs if p.label == 0]
                     aimmat.pairs = [pair]
                 elif len(pairs) == 1:
                     track_state = 0
@@ -232,7 +234,8 @@ def aim_enemy():
                     _ = abs(last_pair.y-pair.y)
                     over_threshold = _ > threshold_target_changed
                     type_changed = not pair.label == last_pair.label
-                    _1 = last_pair.bounding_rect[0] + last_pair.bounding_rect[2]/2
+                    _1 = last_pair.bounding_rect[0] + \
+                        last_pair.bounding_rect[2]/2
                     _2 = pair.bounding_rect[0]+pair.bounding_rect[2]/2
                     position_changed = abs(_1-_2) > threshold_position_changed
                     if over_threshold or type_changed or position_changed:
@@ -251,11 +254,11 @@ def aim_enemy():
                     # 步兵 (just for my robot)
                     d = 257.28*(h**-1.257)
 
-
                 # antigravity
                 y_fix = 0
                 # y_fix -= (2.75*d*d -1.6845*d - 0.4286)/5.5*h # hero
-                y_fix -= min(1.4777*d*d + -3.532*d - 2.1818,8)/5.5*h # infantry
+                y_fix -= min(1.4777*d*d + -3.532*d - 2.1818, 8) / \
+                    5.5*h  # infantry
                 # y_fix -= min(1.4777*d*d + -3.532*d - 2.1818,8)/5.5*h # infantry
                 print(d, y_fix)
 
@@ -277,7 +280,7 @@ def aim_enemy():
                         ),
                         0
                     )
-                    predict2 = (predict1[0]-lastPredict1[0],0)
+                    predict2 = (predict1[0]-lastPredict1[0], 0)
                 else:
                     predict1 = (
                         predict_movement(
@@ -286,9 +289,10 @@ def aim_enemy():
                         ),
                         0
                     )
-                    predict2 = (0,0)
+                    predict2 = (0, 0)
 
-                target_yfix_pred = (target_yfix[0]+predict1[0]*10+predict2[0]*5, target_yfix[1])
+                target_yfix_pred = (
+                    target_yfix[0]+predict1[0]*10+predict2[0]*5, target_yfix[1])
 
                 # update track state
                 if track_state == 1:
@@ -303,7 +307,7 @@ def aim_enemy():
                 y = target_yfix_pred[1]/hh - 0.5
 
                 # decide to shoot
-                if abs(x)<threshold_shoot and abs(y)<threshold_shoot and track_state==0:
+                if abs(x) < threshold_shoot and abs(y) < threshold_shoot and track_state == 0:
                     shoot_it = 1
                 else:
                     shoot_it = 0
@@ -311,7 +315,8 @@ def aim_enemy():
             ##### serial output #####
             if serial:
                 output = [float(x*5), float(-y*3.5)]
-                output = [miao(output[0], -1.5, 1.5),miao(output[1], -1.2, 1.2)]
+                output = [miao(output[0], -1.5, 1.5),
+                          miao(output[1], -1.2, 1.2)]
                 print(output)
                 new_packet = autoaim.telegram.pack(
                     0x0401, [*output, bytes([shoot_it])], seq=packet_seq)
@@ -334,7 +339,8 @@ def aim_enemy():
                     # aimmat.binary_mat.copy(),
                     aimmat.draw_contours,
                     aimmat.draw_bounding_rects,
-                    aimmat.draw_texts()(lambda l: '{:.2f}'.format(l.bounding_rect[3])),
+                    aimmat.draw_texts()(
+                        lambda l: '{:.2f}'.format(l.bounding_rect[3])),
                     # aimmat.draw_texts()(
                     #     lambda l: '{:.2f}'.format(l.bounding_rect[3])),
                     aimmat.draw_pair_bounding_rects,
