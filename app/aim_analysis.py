@@ -25,9 +25,9 @@ for iii in range(0, 300, 1):
     print('Load {}'.format(img_url))
     img = autoaim.helpers.load(img_url)
     predictor = autoaim.Predictor('weight9.csv', 'pair_weight.csv')
-    feature = predictor.predict(
+    aimmat = predictor.predict(
         img, mode='red', debug=fpscount % 10 == 0, timeout=1)
-    lamps = feature.lamps
+    lamps = aimmat.lamps
     lamps.sort(key=lambda x: x.y)
     x, y, w, h = (0, 0, 0, 0)
     lamps = [l for l in lamps if l.y > 0.15]

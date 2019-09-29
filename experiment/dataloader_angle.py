@@ -15,7 +15,7 @@ import cv2
 import numpy as np
 import random
 from toolz import pipe, curry
-from autoaim import feature, Feature, helpers, Predictor
+from autoaim import aimmat, AimMat, helpers, Predictor
 import re
 
 data_path = os.path.abspath(__file__ + '/../../data')
@@ -53,9 +53,9 @@ class DataLoader():
     def load_images(self, data_type, dataset, images):
         global angle
         for image in images:
-            feature = self.load_img(dataset, image)
-            if feature:
-                pair = feature.pairs[0]
+            aimmat = self.load_img(dataset, image)
+            if aimmat:
+                pair = aimmat.pairs[0]
                 row = pair.anglex + [pair.angle]
                 self.append_csv(self.join('angle', data_type), row)
 
@@ -68,11 +68,11 @@ class DataLoader():
         img = helpers.load(img_path)
         # predictor
         predictor = Predictor('weight9.csv', 'pair_weight.csv','angle_weight.csv')
-        feature = predictor.predict(img, mode='angle', debug=False,timeout=1000)
-        if len(feature.pairs)>0:
-            feature.pairs = [feature.pairs[0]]
-            feature.pairs[0].angle = angle[i]
-        return feature
+        aimmat = predictor.predict(img, mode='angle', debug=False,timeout=1000)
+        if len(aimmat.pairs)>0:
+            aimmat.pairs = [aimmat.pairs[0]]
+            aimmat.pairs[0].angle = angle[i]
+        return aimmat
 
     def load_label(self, dataset, file):
         labels = [[], [], []]  # lamp, small, large
@@ -113,11 +113,11 @@ class DataLoader():
         return self.filename+'_'+str1+'_'+str2+'.csv'
 
     def generate_header(self):
-        '''This method works together with feature.calcdict.'''
+        '''This method works together with aimmat.calcdict.'''
         row = []
         for props in self.props:
-            if props in feature.calcdict:
-                row += feature.calcdict[props].keys()
+            if props in aimmat.calcdict:
+                row += aimmat.calcdict[props].keys()
         row += ['bingo']
         return row
 
@@ -126,9 +126,9 @@ class DataLoader():
     # ===================
 
     def draw_bingo_lamps(self):
-        '''Usage:dataloader.draw_bingo_lamps()(feature)'''
-        def draw(feature, img):
-            lamps = feature.lamps
+        '''Usage:dataloader.draw_bingo_lamps()(aimmat)'''
+        def draw(aimmat, img):
+            lamps = aimmat.lamps
             boom_rects = [x.bounding_rect for x in lamps if not x.bingo]
             bingo_rects = [x.bounding_rect for x in lamps if x.bingo]
             for rect in boom_rects:
@@ -177,7 +177,7 @@ class DataLoader():
 
 
 if __name__ == '__main__':
-    props = feature.enabled_props
+    props = aimmat.enabled_props
     datasets = [
         'test17',
     ]

@@ -46,7 +46,7 @@ class Pair(object):
             raise AttributeError
 
 
-class Feature():
+class AimMat():
 
     def __init__(self, img, **config):
         """receive a image with rgb channel"""
@@ -341,7 +341,7 @@ class Feature():
         return img
 
     def draw_texts(self):
-        '''Usage:feature.draw_texts()(lambda x: x.point_area)'''
+        '''Usage:aimmat.draw_texts()(lambda x: x.point_area)'''
         def draw(key, img):
             lamps = self.lamps
             getattr(self, 'bounding_rects')
@@ -354,7 +354,7 @@ class Feature():
         return curry(draw)
 
     def draw_fps(self):
-        '''Usage:feature.draw_fps()(fps)'''
+        '''Usage:aimmat.draw_fps()(fps)'''
         def draw(fps, img):
             cv2.putText(img, str(fps), (25, 50),
                         cv2.FONT_HERSHEY_DUPLEX, 1.2, (0, 200, 200), 2
@@ -363,7 +363,7 @@ class Feature():
         return curry(draw)
 
     def draw_target(self):
-        '''Usage:feature.draw_fps()(center)'''
+        '''Usage:aimmat.draw_fps()(center)'''
         def draw(center, img):
             center = (int(center[0]), int(center[1]))
             cv2.circle(img, center, 5, (50, 200, 200), -1)
@@ -371,7 +371,7 @@ class Feature():
         return curry(draw)
 
     def draw_centers(self, img, center=None):
-        '''Usage:feature.draw_centers()'''
+        '''Usage:aimmat.draw_centers()'''
         lamps = self.lamps
         getattr(self, 'bounding_rects')
         for lamp in lamps:
@@ -402,7 +402,7 @@ class Feature():
         return img
 
     def draw_pair_bounding_text(self):
-        '''Usage:feature.draw_pair_bounding_text()(lambda x: x.point_area)'''
+        '''Usage:aimmat.draw_pair_bounding_text()(lambda x: x.point_area)'''
         def draw(key, img):
             pairs = self.pairs
             for pair in pairs:
@@ -453,9 +453,9 @@ if __name__ == '__main__':
         img_url = 'data/test12/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-        feature = Feature(img)
+        aimmat = AimMat(img)
 
-        feature.calc([
+        aimmat.calc([
             'contours',
             'bounding_rects',
             'rotated_rects',
@@ -465,17 +465,17 @@ if __name__ == '__main__':
         ])
         exit = pipe(
             img.copy(),
-            # feature.mat.copy(),
-            # feature.binary_mat.copy(),
-            feature.draw_contours,
-            feature.draw_bounding_rects,
-            # feature.draw_rotated_rects,
-            #  feature.draw_ellipses,
-            feature.draw_texts()(
+            # aimmat.mat.copy(),
+            # aimmat.binary_mat.copy(),
+            aimmat.draw_contours,
+            aimmat.draw_bounding_rects,
+            # aimmat.draw_rotated_rects,
+            #  aimmat.draw_ellipses,
+            aimmat.draw_texts()(
                 lambda l: '{:.2f}'.format(l.bounding_rect_area)
             ),
             helpers.showoff
         )
-        print('   find {} contours'.format(len(feature.contours)))
+        print('   find {} contours'.format(len(aimmat.contours)))
         if exit:
             break

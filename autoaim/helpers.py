@@ -15,7 +15,7 @@ def load(img):
     else:
         raise Exception('helpers.load Error: Wrong input.')
     if src is None:
-        raise Exception('autoaim.feature Error: Image loading failed.')
+        raise Exception('autoaim.aimmat Error: Image loading failed.')
     return src
 
 

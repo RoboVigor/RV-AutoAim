@@ -15,7 +15,7 @@ import cv2
 import numpy as np
 import random
 from toolz import pipe, curry
-from autoaim import feature, Feature, helpers
+from autoaim import aimmat, AimMat, helpers
 
 data_path = os.path.abspath(__file__ + '/../../data')
 
@@ -52,12 +52,12 @@ class DataLoader():
 
     def load_images(self, data_type, dataset, images):
         for image in images:
-            feature = self.load_img(dataset, image)
-            if feature:
-                for lamp in feature.lamps:
+            aimmat = self.load_img(dataset, image)
+            if aimmat:
+                for lamp in aimmat.lamps:
                     row = [x for x in lamp.x.values()] + [int(lamp.bingo)]
                     self.append_csv(self.join('lamp', data_type), row)
-                for pair in feature.pairs:
+                for pair in aimmat.pairs:
                     row = pair.x + [int(pair.bingo)]
                     self.append_csv(self.join('pair', data_type), row)
 
@@ -70,12 +70,12 @@ class DataLoader():
         img_path = os.path.join(data_path, dataset, image)
         img = helpers.load(img_path)
         # calc features
-        feature = Feature(img)
-        feature.calc(props)
-        feature.calc_pairs()
+        aimmat = AimMat(img)
+        aimmat.calc(props)
+        aimmat.calc_pairs()
         # label the lamps
-        lamps = feature.lamps
-        pairs = feature.pairs
+        lamps = aimmat.lamps
+        pairs = aimmat.pairs
         for lamp in lamps:
             lamp.bingo = False
             for labeled_lamp in labels[0]:
@@ -106,20 +106,20 @@ class DataLoader():
                 throw_false += 1
             if throw_false % 3 == 0 or pair.bingo < 2:
                 _pairs += [pair]
-            feature.pairs = _pairs
+            aimmat.pairs = _pairs
         print(
             '{}/{}: {} lamps, {} pairs'
             .format(dataset, image, len(lamps), len(pairs))
         )
         if self.debug:
             pipe(img.copy(),
-                 # feature.draw_contours,
-                 feature.draw_bounding_rects,
+                 # aimmat.draw_contours,
+                 aimmat.draw_bounding_rects,
                  self.draw_labeled_lamps()(lamps),
-                 self.draw_bingo_lamps()(feature),
+                 self.draw_bingo_lamps()(aimmat),
                  helpers.showoff
                  )
-        return feature
+        return aimmat
 
     def load_label(self, dataset, file):
         labels = [[] for i in range(5)]  # lamp, small, large
@@ -164,11 +164,11 @@ class DataLoader():
         return self.filename+'_'+str1+'_'+str2+'.csv'
 
     def generate_header(self):
-        '''This method works together with feature.calcdict.'''
+        '''This method works together with aimmat.calcdict.'''
         row = []
         for props in self.props:
-            if props in feature.calcdict:
-                row += feature.calcdict[props].keys()
+            if props in aimmat.calcdict:
+                row += aimmat.calcdict[props].keys()
         row += ['bingo']
         return row
 
@@ -177,9 +177,9 @@ class DataLoader():
     # ===================
 
     def draw_bingo_lamps(self):
-        '''Usage:dataloader.draw_bingo_lamps()(feature)'''
-        def draw(feature, img):
-            lamps = feature.lamps
+        '''Usage:dataloader.draw_bingo_lamps()(aimmat)'''
+        def draw(aimmat, img):
+            lamps = aimmat.lamps
             boom_rects = [x.bounding_rect for x in lamps if not x.bingo]
             bingo_rects = [x.bounding_rect for x in lamps if x.bingo]
             for rect in boom_rects:
@@ -228,7 +228,7 @@ class DataLoader():
 
 
 if __name__ == '__main__':
-    props = feature.enabled_props
+    props = aimmat.enabled_props
     datasets = [
         'test12',
         'test18',

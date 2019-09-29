@@ -28,16 +28,16 @@ img = helpers.load('../data/test7/img1.jpg')
 predictor = Predictor('weight.csv')
 predictor.predict(img, mode='red')
 
-# extract features
-feature = Feature(img)
-print('find {} contours'.format(len(feature.contours)))
+# extract aimmats
+aimmat = AimMat(img)
+print('find {} contours'.format(len(aimmat.contours)))
 pipe(img.copy(),
-     feature.draw_contours,
-     #  feature.draw_bounding_rects,
-     feature.draw_rotated_rects,
-     #  feature.draw_ellipses,
-     feature.draw_texts()('point_area'),
-     #  feature.draw_texts()('greyscale'),
+     aimmat.draw_contours,
+     #  aimmat.draw_bounding_rects,
+     aimmat.draw_rotated_rects,
+     #  aimmat.draw_ellipses,
+     aimmat.draw_texts()('point_area'),
+     #  aimmat.draw_texts()('greyscale'),
      helpers.showoff
      )
 ```

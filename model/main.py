@@ -153,7 +153,7 @@ def analyse(x_anls, y_anls, threshold):
 
 def save(filename):
     dataloader = autoaim.DataLoader()
-    dataloader.new_csv(filename, autoaim.feature.enabled_props)
+    dataloader.new_csv(filename, autoaim.aimmat.enabled_props)
     w = [wi.data.cpu() for wi in model.parameters()]
     w = torch.cat((w[0][0], w[1])).numpy()
     dataloader.append_csv(filename, w)

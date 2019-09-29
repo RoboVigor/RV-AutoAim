@@ -39,13 +39,13 @@ class AutoAimTestSuite(unittest.TestCase):
         print(x)
         assert x
 
-    def test_feature(self):
+    def test_aimmat(self):
         '''calculate features using test8'''
         for i in range(0, 5, 1):
             img_url = 'data/test8/img{}.jpg'.format(i)
             img = helpers.load(img_url)
-            feature = Feature(img)
-            feature.calc([
+            aimmat = AimMat(img)
+            aimmat.calc([
                 'contours',
                 'bounding_rects',
                 'rotated_rects',
@@ -60,8 +60,8 @@ class AutoAimTestSuite(unittest.TestCase):
             img = helpers.load(img_url)
             predictor = Predictor(
                 'weight9.csv', 'pair_weight.csv', 'angle_weight.csv')
-            feature = predictor.predict(img, mode='red', debug=False)
-            lamps = feature.lamps
+            aimmat = predictor.predict(img, mode='red', debug=False)
+            lamps = aimmat.lamps
             lamps = [x for x in lamps if x.y > 0.5]
 
     @helpers.time_this

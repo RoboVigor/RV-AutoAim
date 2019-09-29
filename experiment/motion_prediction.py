@@ -76,15 +76,15 @@ def aim_enemy():
 
             ##### locate target #####
 
-            feature = predictor.predict(
+            aimmat = predictor.predict(
                 img,
                 mode=mode,
                 debug=False,
                 lamp_threshold=0.01
             )
             # filter out the true lamp
-            lamps = feature.lamps
-            pairs = feature.pairs
+            lamps = aimmat.lamps
+            pairs = aimmat.pairs
             # sort by confidence
             lamps.sort(key=lambda x: x.y)
             pairs.sort(key=lambda x: x.y)
@@ -123,7 +123,7 @@ def aim_enemy():
                     else:
                         pair = close_pair
                     x, y, w, h = pair.bounding_rect
-                    feature.pairs = [pair]
+                    aimmat.pairs = [pair]
                 elif len(pairs) == 1:
                     x, y, w, h = pairs[0].bounding_rect
                 elif len(lamps) > 1:
@@ -173,15 +173,15 @@ def aim_enemy():
 
             ##### locate target #####
 
-            feature = predictor.predict(
+            aimmat = predictor.predict(
                 img,
                 mode=mode,
                 debug=False,
                 lamp_threshold=0.01
             )
             # filter out the true lamp
-            lamps = feature.lamps
-            pairs = feature.pairs
+            lamps = aimmat.lamps
+            pairs = aimmat.pairs
             # sort by confidence
             lamps.sort(key=lambda x: x.y)
             pairs.sort(key=lambda x: x.y)
@@ -220,7 +220,7 @@ def aim_enemy():
                     else:
                         pair = close_pair
                     x, y, w, h = pair.bounding_rect
-                    feature.pairs = [pair]
+                    aimmat.pairs = [pair]
                 elif len(pairs) == 1:
                     x, y, w, h = pairs[0].bounding_rect
                 elif len(lamps) > 1:
@@ -289,23 +289,23 @@ def aim_enemy():
                 print(pred)
                 pipe(
                     img.copy(),
-                    # feature.mat.copy(),
-                    # feature.binary_mat.copy(),
-                    feature.draw_contours,
-                    feature.draw_bounding_rects,
-                    # feature.draw_texts()(lambda l: '{:.2f}'.format(l.y)),
-                    # feature.draw_texts()(
+                    # aimmat.mat.copy(),
+                    # aimmat.binary_mat.copy(),
+                    aimmat.draw_contours,
+                    aimmat.draw_bounding_rects,
+                    # aimmat.draw_texts()(lambda l: '{:.2f}'.format(l.y)),
+                    # aimmat.draw_texts()(
                     #     lambda l: '{:.2f}'.format(l.bounding_rect[3])),
-                    feature.draw_pair_bounding_rects,
-                    feature.draw_pair_bounding_text()(
+                    aimmat.draw_pair_bounding_rects,
+                    aimmat.draw_pair_bounding_text()(
                         lambda l: '{:.2f}'.format(l.y)
                     ),
-                    curry(feature.draw_centers)(
+                    curry(aimmat.draw_centers)(
                         center=(good_dict[iii+10][0], good_dict[iii+10][1])),
-                    curry(feature.draw_centers)(
+                    curry(aimmat.draw_centers)(
                         center=(good_dict[iii+10][0], good_dict[iii+10][1])),
-                    # feature.draw_fps()(int(good_dict[iii+10][0]*100)),
-                    feature.draw_target()((target[0]+pred*12, target[1])),
+                    # aimmat.draw_fps()(int(good_dict[iii+10][0]*100)),
+                    aimmat.draw_target()((target[0]+pred*12, target[1])),
                     curry(autoaim.helpers.showoff)(timeout=100, update=True)
                 )
     return curry(aim)

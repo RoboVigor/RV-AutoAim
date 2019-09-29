@@ -1,9 +1,9 @@
 from . import telegram
 from . import helpers
-from . import feature
+from . import aimmat
 from . import camera
 from .camera import Camera
-from .feature import Feature, pipe
+from .aimmat import AimMat, pipe
 from . import dataloader
 from .dataloader import DataLoader
 from . import predictor

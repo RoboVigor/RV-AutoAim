@@ -137,15 +137,15 @@ def aim_enemy():
 
             ##### locate target #####
 
-            feature = predictor.predict(
+            aimmat = predictor.predict(
                 img,
                 mode=mode,
                 debug=False,
                 lamp_threshold=0.01
             )
             # filter out the true lamp
-            lamps = feature.lamps
-            pairs = feature.pairs
+            lamps = aimmat.lamps
+            pairs = aimmat.pairs
             # sort by confidence
             lamps.sort(key=lambda x: x.y)
             pairs.sort(key=lambda x: x.y)
@@ -206,8 +206,8 @@ def aim_enemy():
                     last_pair = pair
                     pair = pairs[-1]
                     x, y, w, h = pair.bounding_rect
-                    feature.pairs = [p for p in pairs if p.label==0]
-                    feature.pairs = [pair]
+                    aimmat.pairs = [p for p in pairs if p.label==0]
+                    aimmat.pairs = [pair]
                 elif len(pairs) == 1:
                     track_state = 0
                     last_pair = pair
@@ -323,22 +323,22 @@ def aim_enemy():
                 # print("height: ", h, w)
                 pipe(
                     img.copy(),
-                    # feature.mat.copy(),
-                    # feature.binary_mat.copy(),
-                    feature.draw_contours,
-                    feature.draw_bounding_rects,
-                    feature.draw_texts()(lambda l: '{:.2f}'.format(l.bounding_rect[3])),
-                    # feature.draw_texts()(
+                    # aimmat.mat.copy(),
+                    # aimmat.binary_mat.copy(),
+                    aimmat.draw_contours,
+                    aimmat.draw_bounding_rects,
+                    aimmat.draw_texts()(lambda l: '{:.2f}'.format(l.bounding_rect[3])),
+                    # aimmat.draw_texts()(
                     #     lambda l: '{:.2f}'.format(l.bounding_rect[3])),
-                    # feature.draw_pair_bounding_rects,
-                    # feature.draw_pair_bounding_text()(
+                    # aimmat.draw_pair_bounding_rects,
+                    # aimmat.draw_pair_bounding_text()(
                     #     lambda l: '{:.2f}'.format(l.angle)
                     # ),
-                    # curry(feature.draw_centers)(center=(ww/2, hh/2)),
-                    # curry(feature.draw_centers)(center=target_yfix_pred),
-                    # feature.draw_target()(target_yfix_pred),
-                    # feature.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
-                    feature.draw_fps()(int(fps)),
+                    # curry(aimmat.draw_centers)(center=(ww/2, hh/2)),
+                    # curry(aimmat.draw_centers)(center=target_yfix_pred),
+                    # aimmat.draw_target()(target_yfix_pred),
+                    # aimmat.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
+                    aimmat.draw_fps()(int(fps)),
                     curry(autoaim.helpers.showoff)(timeout=1, update=True)
                 )
     return curry(aim)

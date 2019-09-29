@@ -11,7 +11,7 @@ Author:
 import math
 import cv2
 import numpy as np
-from autoaim import helpers, feature, Feature, DataLoader, pipe
+from autoaim import helpers, aimmat, AimMat, DataLoader, pipe
 from toolz import curry
 
 
@@ -34,20 +34,20 @@ class Predictor():
         w_lamp = self.w_lamp
         w_pair = self.w_pair
         w_angle = self.w_angle
-        calcdict = feature.calcdict
+        calcdict = aimmat.calcdict
         # modes
         pair_cheat_boost = 0
         if mode == 'red':
-            f = Feature(img)
+            f = AimMat(img)
         elif mode == 'blue':
-            f = Feature(img, channel=lambda c: cv2.subtract(c[0], c[2]))
+            f = AimMat(img, channel=lambda c: cv2.subtract(c[0], c[2]))
         elif mode == 'white':
-            f = Feature(img, channel=lambda c: c[0])
+            f = AimMat(img, channel=lambda c: c[0])
         elif mode == 'angle':
-            f = Feature(img, channel=lambda c: c[0])
+            f = AimMat(img, channel=lambda c: c[0])
             pair_cheat_boost = 1
         elif mode == 'old':
-            f = Feature(img,
+            f = AimMat(img,
                         preprocess=False,
                         channel=lambda c: c[1],
                         binary_threshold_scale=lambda t: (255-t)*0.5+t)
