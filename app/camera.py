@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""测试相机
+
+Author:
+"""
 import autoaim
 import cv2
 import time

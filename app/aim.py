@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""单线程自瞄
+
+Author:
+"""
 import autoaim
 import cv2
 import time

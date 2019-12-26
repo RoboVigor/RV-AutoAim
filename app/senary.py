@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""保存图像
+
+Author:
+"""
 import autoaim
 import cv2
 import os
