@@ -46,18 +46,12 @@ pipe(img.copy(),
 
 ## 帧结构
 
-| Name | Length | Description   | Value(DEC) |
-| ---- | ------ | ------------- | ---------- |
-| SOF  | 8      | 起始段        | 87         |
-| ID   | 4      | 数据ID        | 0-15       |
-| LEN  | 4      | 数据长度n     | 0-15       |
-| DATA | 16n    | uint16        |            |
-| CRC8 | 8      | 检验段 |            |
-| EOF  | 8      | 结束段        | 88         |
-
-已废除，通讯协议见`/docs/RM2019裁判系统用户接口协议附录 V1.1.pdf`
+见`/docs/RM2019裁判系统用户接口协议附录 V1.1.pdf`
 
 ## Contribute
+
+### 协作方式
+AutoAim从v3开始将区分库维护者和用户，前者主要负责维护autoaim库中的接口和算法实现，后者主要使用autoaim库对各兵种进行调试。
 
 ### Python 风格
 
