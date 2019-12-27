@@ -2,7 +2,7 @@
 
 # RV AutoAim
 
-再一次开始。
+再再一次开始。
 
 ## Install
 
