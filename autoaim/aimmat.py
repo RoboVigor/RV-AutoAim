@@ -341,7 +341,7 @@ class AimMat():
         return img
 
     def draw_texts(self):
-        '''Usage:aimmat.draw_texts()(lambda x: x.point_area)'''
+        '''Usage:toolbox.draw_texts()(lambda x: x.point_area)'''
         def draw(key, img):
             lamps = self.lamps
             getattr(self, 'bounding_rects')
@@ -354,7 +354,7 @@ class AimMat():
         return curry(draw)
 
     def draw_fps(self):
-        '''Usage:aimmat.draw_fps()(fps)'''
+        '''Usage:toolbox.draw_fps()(fps)'''
         def draw(fps, img):
             cv2.putText(img, str(fps), (25, 50),
                         cv2.FONT_HERSHEY_DUPLEX, 1.2, (0, 200, 200), 2
@@ -363,7 +363,7 @@ class AimMat():
         return curry(draw)
 
     def draw_target(self):
-        '''Usage:aimmat.draw_fps()(center)'''
+        '''Usage:toolbox.draw_target()(center)'''
         def draw(center, img):
             center = (int(center[0]), int(center[1]))
             cv2.circle(img, center, 5, (50, 200, 200), -1)
@@ -371,7 +371,7 @@ class AimMat():
         return curry(draw)
 
     def draw_centers(self, img, center=None):
-        '''Usage:aimmat.draw_centers()'''
+        '''Usage:toolbox.draw_centers()'''
         lamps = self.lamps
         getattr(self, 'bounding_rects')
         for lamp in lamps:
@@ -402,7 +402,7 @@ class AimMat():
         return img
 
     def draw_pair_bounding_text(self):
-        '''Usage:aimmat.draw_pair_bounding_text()(lambda x: x.point_area)'''
+        '''Usage:toolbox.draw_pair_bounding_text()(lambda x: x.point_area)'''
         def draw(key, img):
             pairs = self.pairs
             for pair in pairs:
@@ -453,9 +453,9 @@ if __name__ == '__main__':
         img_url = 'data/test12/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-        aimmat = AimMat(img)
+        toolbox = AimMat(img)
 
-        aimmat.calc([
+        toolbox.calc([
             'contours',
             'bounding_rects',
             'rotated_rects',
@@ -465,17 +465,17 @@ if __name__ == '__main__':
         ])
         exit = pipe(
             img.copy(),
-            # aimmat.mat.copy(),
-            # aimmat.binary_mat.copy(),
-            aimmat.draw_contours,
-            aimmat.draw_bounding_rects,
-            # aimmat.draw_rotated_rects,
-            #  aimmat.draw_ellipses,
-            aimmat.draw_texts()(
+            # toolbox.mat.copy(),
+            # toolbox.binary_mat.copy(),
+            toolbox.draw_contours,
+            toolbox.draw_bounding_rects,
+            # toolbox.draw_rotated_rects,
+            #  toolbox.draw_ellipses,
+            toolbox.draw_texts()(
                 lambda l: '{:.2f}'.format(l.bounding_rect_area)
             ),
             helpers.showoff
         )
-        print('   find {} contours'.format(len(aimmat.contours)))
+        print('   find {} contours'.format(len(toolbox.contours)))
         if exit:
             break

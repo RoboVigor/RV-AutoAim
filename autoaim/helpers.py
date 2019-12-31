@@ -4,6 +4,7 @@
 import cv2
 import numpy
 from functools import wraps
+from matplotlib import pyplot as plt
 
 
 def load(img):
@@ -35,6 +36,16 @@ def showoff(img, timeout=0, update=False):
     if key == 27:
         return True
     return False
+
+
+def color(img):
+    return cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
+
+def pltshow(img):
+    """an easy way to show image with matplotlib"""
+    plt.imshow(img[..., ::-1])
+    plt.show()
 
 
 def draw(key, img):
