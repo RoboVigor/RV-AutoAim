@@ -102,6 +102,6 @@ if __name__ == '__main__':
         img_url = 'data/test_fu_1/{}.jpeg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-        predictor = Predictor('weights/lamp.csv',
-                              'weights/pair.csv', 'weights/angle.csv')
+        predictor = Predictor('model/weights/lamp.csv',
+                              'model/weights/pair.csv', 'model/weights/angle.csv')
         predictor.predict(img, mode='blue', timeout=500)

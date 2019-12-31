@@ -44,7 +44,7 @@ def moving_average(last, new):
 
 
 def aim_enemy():
-    def aim(serial=True, lamp_weight='weights/lamp.csv', pair_weight='weights/pair.csv', angle_weight='weights/angle.csv', mode='red', gui_update=None):
+    def aim(serial=True, lamp_weight='model/weights/lamp.csv', pair_weight='model/weights/pair.csv', angle_weight='model/weights/angle.csv', mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # autoaim

@@ -35,7 +35,7 @@ duration = 1
 while True:
     suc, img = capture.read()
     predictor = autoaim.Predictor(
-        'weights/lamp.csv', 'weights/pair.csv', 'weights/angle.csv')
+        'model/weights/lamp.csv', 'model/weights/pair.csv', 'model/weights/angle.csv')
     aimmat = predictor.predict(
         img, mode='red', debug=fpscount % 10 == 0, timeout=1)
     lamps = aimmat.lamps
