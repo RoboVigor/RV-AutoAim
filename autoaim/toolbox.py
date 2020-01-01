@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 from toolz import pipe, curry
 from autoaim import helpers, AttrDict
+import math
 
 
 class Lamp(AttrDict):
@@ -37,7 +38,13 @@ class ToolboxConfig(AttrDict):
             'hsv_lower_value': 46,
             'point_area_threshold': (32, 8192),
             'max_contour_len': 100,
-            'features': ['bounding_rect', 'rotated_rect', 'ellipse', 'contour_feature']
+            'features': ['bounding_rect', 'rotated_rect', 'ellipse', 'contour_feature', 'angle'],
+            'camera_matrix': [
+                [1404.301464037759, 0, 615.802069602196],
+                [0, 1408.256656922631, 339.7994434183557],
+                [0, 0, 1]
+            ],
+            'distortion_coefficients': [-0.4432836554055214, 0.44834903270408, -0.0008076318909730519, -0.004013115215051138, 0.8668211330541649]
         }
         _config.update(config)
         super().__init__(_config)
@@ -65,6 +72,9 @@ class Toolbox():
 
     def undistort(self, mat):
         '''mat -> mat'''
+        camera_matrix = np.array(self.config.camera_matrix)
+        distortion_coefficients = np.array(self.config.distortion_coefficients)
+        mat = cv2.undistort(mat, camera_matrix, distortion_coefficients)
         return mat
 
     def split_channels(self, mat):
@@ -136,10 +146,11 @@ class Toolbox():
 
     def calc_features(self, mat):
         methods = {
-            'bounding_rect': lambda x: self.calc_bounding_rects(x),
-            'rotated_rect': lambda x: self.calc_rotated_rects(x),
-            'contour_feature': lambda x: self.calc_contour_features(x),
-            'ellipse': lambda x: self.calc_ellipses(x),
+            'bounding_rect':  self.calc_bounding_rects,
+            'rotated_rect': self.calc_rotated_rects,
+            'contour_feature': self.calc_contour_features,
+            'ellipse': self.calc_ellipses,
+            'angle': self.calc_angle
         }
         for feature in self.config.features:
             methods[feature](mat)
@@ -157,6 +168,33 @@ class Toolbox():
         threshold = range(*self.config.rect_area_threshold)
         self.data.lamps = [
             x for x in lamps if x.bounding_rect_area in threshold]
+        return mat
+
+    def calc_point_angle(self, x_screen, y_screen):
+        camera_matrix = np.array(self.config.camera_matrix)
+        cx = camera_matrix[0, 2]
+        cy = camera_matrix[1, 2]
+        fx = camera_matrix[0, 0]
+        fy = camera_matrix[1, 1]
+        yaw = math.atan((x_screen-cx)/fx)
+        pitch = math.atan((y_screen-cy)/fy)
+        return (yaw/math.pi*180, pitch/math.pi*180)
+
+    def calc_angle(self, mat):
+        '''lamp.bounding_rect -> lamp.angle'''
+        lamps = self.data.lamps
+        camera_matrix = np.array(self.config.camera_matrix)
+        cx = camera_matrix[0, 2]
+        cy = camera_matrix[1, 2]
+        fx = camera_matrix[0, 0]
+        fy = camera_matrix[1, 1]
+        for lamp in lamps:
+            x, y, w, h = lamp.bounding_rect
+            x_screen = x+w/2
+            y_screen = y+h/2
+            yaw = math.atan((x_screen-cx)/fx)
+            pitch = math.atan((y_screen-cy)/fy)
+            lamp.angle = (yaw/math.pi*180, pitch/math.pi*180)
         return mat
 
     def calc_rotated_rects(self, mat):
@@ -179,7 +217,7 @@ class Toolbox():
             x, y, w, h = lamp.bounding_rect
             roi = np.zeros_like(mat)
             cv2.drawContours(roi, [lamp.contour], -1, color=255, thickness=-1)
-            roi = roi[y:y+h, x:x+w]
+            roi = roi[y: y+h, x: x+w]
             pts = np.where(roi == 255)
             pts = mat[pts[0]+y, pts[1]+x]
             point_area = len(pts)
@@ -198,7 +236,7 @@ class Toolbox():
             lamp.ellipse = cv2.fitEllipse(lamp.contour)
         return mat
 
-    def match_pairs(self, mat):
+    def match_pairs(self, mat=None):
         '''lamp -> pair'''
         pairs = []
         lamps = sorted(self.data.lamps, key=lambda x: x.bounding_rect[0])
@@ -243,20 +281,30 @@ class Toolbox():
     # ===================
     # Helper
     # ===================
+    def calc(self, props):
+        # calc the features
+        for lamp in self.data.lamps:
+            x = {}
+            for prop in props:
+                for x_key in calcdict.get(prop, []):
+                    func = calcdict[prop][x_key]
+                    x[x_key] = func(lamp)
+            lamp.x = x
+
     def draw_contours(self, img):
         contours = self.data.contours
         cv2.drawContours(img, contours, -1, (0, 150, 150), 2)
         return img
 
     def draw_bounding_rects(self, img):
-        rects = self.data.bounding_rects
+        rects = [l.bounding_rect for l in self.data.lamps]
         for rect in rects:
             x, y, w, h = rect
             cv2.rectangle(img, (x, y), (x+w, y+h), (200, 0, 200), 2)
         return img
 
     def draw_rotated_rects(self, img):
-        rects = self.data.rotated_rects
+        rects = [l.bounding_rect for l in self.data.lamps]
         for rect in rects:
             box = cv2.boxPoints(rect)
             box = np.int0(box)
@@ -291,7 +339,7 @@ class Toolbox():
         return curry(draw)
 
     def draw_target(self):
-        '''Usage:toolbox.draw_fps()(center)'''
+        '''Usage:toolbox.draw_target()(center)'''
         def draw(center, img):
             center = (int(center[0]), int(center[1]))
             cv2.circle(img, center, 5, (50, 200, 200), -1)
@@ -342,6 +390,21 @@ class Toolbox():
         return curry(draw)
 
 
+calcdict = {
+    'bounding_rects': {
+        'bounding_rect_ratio': lambda l: l.bounding_rect_ratio
+    },
+    'rotated_rects': {
+        'rotated_rect_angle': lambda l: abs(l.rotated_rect_angle-90)/90
+    },
+    'grayscales': {
+        'grayscale': lambda l: l.grayscale/255,
+    },
+    'point_areas': {
+        'point_area': lambda l: l.point_area/2048,
+    }
+}
+
 if __name__ == '__main__':
     for i in range(135, 250, 1):
         img_url = 'data/test18/img{}.jpg'.format(i)
@@ -355,6 +418,8 @@ if __name__ == '__main__':
              #  toolbox.split_channels,
              #  toolbox.preprocess,
              #  toolbox.binarize,
+             toolbox.undistort,
+             helpers.peek,
              toolbox.split_hsv,
              helpers.peek,
              toolbox.find_contours,
@@ -362,7 +427,7 @@ if __name__ == '__main__':
              toolbox.match_pairs,
              helpers.color,
              toolbox.draw_contours,
-             toolbox.draw_texts()(lambda x: x.grayscale),
+             toolbox.draw_texts()(lambda x: x.angle[0]),
              helpers.showoff,
              )
         print(toolbox.data.pairs)

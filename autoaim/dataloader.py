@@ -15,9 +15,9 @@ import cv2
 import numpy as np
 import random
 from toolz import pipe, curry
-from autoaim import aimmat, AimMat, helpers
+from autoaim import Toolbox, helpers
 
-data_path = os.path.abspath(__file__ + '/../..')
+data_path = os.path.abspath(__file__ + '/../../data/')
 
 
 class DataLoader():
@@ -234,4 +234,4 @@ if __name__ == '__main__':
         'test18',
     ]
     dataloader = DataLoader(debug=False)
-    dataloader.load_datasets(datasets, props)
+    dataloader.load_datasets(datasets, props, filename='test')

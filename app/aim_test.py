@@ -82,7 +82,7 @@ def load_img():
     global new_img, aim
     for i in range(0, 300, 1):
         img_url = 'data/test19/img{}.jpg'.format(i)
-        print('Load {}'.format(img_url))
+        print('Load {}'.format(img_url), end=' ')
         new_img = autoaim.helpers.load(img_url)
         cv2.waitKey(100)
     aim = False
@@ -100,13 +100,13 @@ def send_packet():
 
 
 def aim_enemy():
-    def aim(serial=True, lamp_weight='model/weights/lamp.csv', pair_weight='model/weights/pair.csv', angle_weight='model/weights/angle.csv', mode='red', gui_update=None):
+    def aim(serial=True, lamp_weight='lamp.csv', pair_weight='pair.csv', angle_weight='angle.csv', mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # config
         threshold_target_changed = 0.5
-        distance_to_laser = 12.5
-        x_fix = 0
+        distance_to_laser = 12
+        x_fix = -15
         threshold_shoot = 0.03
         threshold_position_changed = 70
         # autoaim
@@ -114,7 +114,7 @@ def aim_enemy():
         predictor = autoaim.Predictor(lamp_weight, pair_weight, angle_weight)
         last_pair = None
         pair = None
-        height_record_list = ([0, 0, 0, 0])
+        height_record_list = ([0 for i in range(10)])
         predict_list = ([0 for i in range(1)], [0 for i in range(1)])
         y_fix = 0
         predict1 = (0, 0)
@@ -142,15 +142,15 @@ def aim_enemy():
 
             ##### locate target #####
 
-            aimmat = predictor.predict(
+            toolbox = predictor.predict(
                 img,
                 mode=mode,
                 debug=False,
                 lamp_threshold=0.01
             )
             # filter out the true lamp
-            lamps = aimmat.lamps
-            pairs = aimmat.pairs
+            lamps = toolbox.data.lamps
+            pairs = toolbox.data.pairs
             # sort by confidence
             lamps.sort(key=lambda x: x.y)
             pairs.sort(key=lambda x: x.y)
@@ -161,9 +161,9 @@ def aim_enemy():
             _x = output[0]
             camera_movement_x = 76.498*_x*_x + 9.5919*_x
             camera_movement_y = 0
-            if _x<0:
+            if _x < 0:
                 camera_movement_x *= -1
-            camera_movement = (camera_movement_x,camera_movement_y)
+            camera_movement = (camera_movement_x, camera_movement_y)
 
             # logic of losing target
             if len(lamps) == 0:
@@ -207,12 +207,12 @@ def aim_enemy():
                     # reset track state
                     track_state = 0
                     # decide the pair
-                    pairs = sorted(pairs,key=lambda x:x.score)
+                    pairs = sorted(pairs, key=lambda x: x.score)
                     last_pair = pair
                     pair = pairs[-1]
                     x, y, w, h = pair.bounding_rect
-                    aimmat.pairs = [p for p in pairs if p.label==0]
-                    aimmat.pairs = [pair]
+                    toolbox.data.pairs = [p for p in pairs if p.label == 0]
+                    toolbox.data.pairs = [pair]
                 elif len(pairs) == 1:
                     track_state = 0
                     last_pair = pair
@@ -237,7 +237,8 @@ def aim_enemy():
                     _ = abs(last_pair.y-pair.y)
                     over_threshold = _ > threshold_target_changed
                     type_changed = not pair.label == last_pair.label
-                    _1 = last_pair.bounding_rect[0] + last_pair.bounding_rect[2]/2
+                    _1 = last_pair.bounding_rect[0] + \
+                        last_pair.bounding_rect[2]/2
                     _2 = pair.bounding_rect[0]+pair.bounding_rect[2]/2
                     position_changed = abs(_1-_2) > threshold_position_changed
                     if over_threshold or type_changed or position_changed:
@@ -247,15 +248,22 @@ def aim_enemy():
 
                 # distance
                 if ww == 1280:
-                    d = 106.56*(h**-1.127)
-                elif ww == 640:
-                    d = 106.56*((h*2)**-1.127)
+                    # d = 106.56*(h**-1.127) # 0802早热身赛 (blue)
+                    # 英雄
+                    # if mode == 'blue':
+                    #     d = 73.7*(h**-0.972)
+                    # else:
+                    #     d = 72.472*(h**-1.027)
+                    # 步兵 (just for my robot)
+                    d = 257.28*(h**-1.257)
 
                 # antigravity
                 y_fix = 0
                 # y_fix -= (2.75*d*d -1.6845*d - 0.4286)/5.5*h # hero
-                y_fix -= (1.4777*d*d + -3.532*d - 2.1818)/5.5*h # infantry
-                print(d, y_fix)
+                y_fix -= min(1.4777*d*d + -3.532*d - 2.1818, 8) / \
+                    5.5*h  # infantry
+                # y_fix -= min(1.4777*d*d + -3.532*d - 2.1818,8)/5.5*h # infantry
+                # print(d, y_fix)
 
                 # distance between camera and barrel
                 y_fix -= h/5.5*distance_to_laser
@@ -275,7 +283,7 @@ def aim_enemy():
                         ),
                         0
                     )
-                    predict2 = (predict1[0]-lastPredict1[0],0)
+                    predict2 = (predict1[0]-lastPredict1[0], 0)
                 else:
                     predict1 = (
                         predict_movement(
@@ -284,9 +292,10 @@ def aim_enemy():
                         ),
                         0
                     )
-                    predict2 = (0,0)
+                    predict2 = (0, 0)
 
-                target_yfix_pred = (target_yfix[0]+predict1[0]*10+predict2[0]*5, target_yfix[1])
+                target_yfix_pred = (
+                    target_yfix[0]+predict1[0]*10+predict2[0]*5, target_yfix[1])
 
                 # update track state
                 if track_state == 1:
@@ -301,16 +310,19 @@ def aim_enemy():
                 y = target_yfix_pred[1]/hh - 0.5
 
                 # decide to shoot
-                if abs(x)<threshold_shoot and abs(y)<threshold_shoot and track_state==0:
+                if abs(x) < threshold_shoot and abs(y) < threshold_shoot and track_state == 0:
                     shoot_it = 1
                 else:
                     shoot_it = 0
 
             ##### serial output #####
+            output = toolbox.calc_point_angle(*target_yfix)
+            output = [float(output[0]/10), float(output[1]/10)]
+            # output = [float(x*5), float(-y*3.5)]
+            output = [miao(output[0], -1.5, 1.5),
+                      miao(output[1], -1.2, 1.2)]
+            print(output)
             if serial:
-                output = [float(x*3), float(-y*2)]
-                output = [miao(output[0], -0.8, 0.8),miao(output[1], -0.8, 0.8)]
-                # print(output)
                 new_packet = autoaim.telegram.pack(
                     0x0401, [*output, bytes([shoot_it])], seq=packet_seq)
                 packet_seq = (packet_seq+1) % 256
@@ -328,22 +340,23 @@ def aim_enemy():
                 # print("height: ", h, w)
                 pipe(
                     img.copy(),
-                    # aimmat.mat.copy(),
-                    # aimmat.binary_mat.copy(),
-                    aimmat.draw_contours,
-                    aimmat.draw_bounding_rects,
-                    aimmat.draw_texts()(lambda l: '{:.2f}'.format(l.bounding_rect[3])),
-                    # aimmat.draw_texts()(
+                    # toolbox.mat.copy(),
+                    # toolbox.binary_mat.copy(),
+                    toolbox.draw_contours,
+                    toolbox.draw_bounding_rects,
+                    toolbox.draw_texts()(
+                        lambda l: l.bounding_rect[3]),
+                    # toolbox.draw_texts()(
                     #     lambda l: '{:.2f}'.format(l.bounding_rect[3])),
-                    # aimmat.draw_pair_bounding_rects,
-                    # aimmat.draw_pair_bounding_text()(
+                    toolbox.draw_pair_bounding_rects,
+                    # toolbox.draw_pair_bounding_text()(
                     #     lambda l: '{:.2f}'.format(l.angle)
                     # ),
-                    # curry(aimmat.draw_centers)(center=(ww/2, hh/2)),
-                    # curry(aimmat.draw_centers)(center=target_yfix_pred),
-                    # aimmat.draw_target()(target_yfix_pred),
-                    # aimmat.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
-                    aimmat.draw_fps()(int(fps)),
+                    curry(toolbox.draw_centers)(center=(ww/2, hh/2)),
+                    # curry(toolbox.draw_centers)(center=target_yfix_pred),
+                    # toolbox.draw_target()(target_yfix_pred),
+                    # toolbox.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
+                    toolbox.draw_fps()(int(fps)),
                     curry(autoaim.helpers.showoff)(timeout=1, update=True)
                 )
     return curry(aim)

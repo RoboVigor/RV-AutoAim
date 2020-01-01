@@ -117,15 +117,15 @@ class AimMat():
         return [x.ellipse for x in self.__lamps]
 
     @property
-    def greyscales(self):
-        if not self.has_calculated('greyscales'):
-            self.calc_greyscales_and_point_areas()
-        return [x.greyscale for x in self.__lamps]
+    def grayscales(self):
+        if not self.has_calculated('grayscales'):
+            self.calc_grayscales_and_point_areas()
+        return [x.grayscale for x in self.__lamps]
 
     @property
     def point_areas(self):
         if not self.has_calculated('point_areas'):
-            self.calc_greyscales_and_point_areas()
+            self.calc_grayscales_and_point_areas()
         return [x.point_area for x in self.__lamps]
 
     @property
@@ -232,8 +232,8 @@ class AimMat():
         self.__set_calculated('rotated_rects')
         return lamps
 
-    def calc_greyscales_and_point_areas(self, mat=None):
-        '''mat -> lamp.greyscale, lamp.point_areas
+    def calc_grayscales_and_point_areas(self, mat=None):
+        '''mat -> lamp.grayscale, lamp.point_areas
             @todo reduce the size of roi to bounding rect
         '''
         if mat is None:
@@ -250,13 +250,13 @@ class AimMat():
             pts = np.where(roi == 255)
             pts = mat[pts[0], pts[1]]
             point_area = len(pts)
-            greyscale = sum(pts) / point_area
+            grayscale = sum(pts) / point_area
             lamp.point_area = point_area
-            lamp.greyscale = greyscale
+            lamp.grayscale = grayscale
         threshold = range(*self.config['point_area_threshold'])
         lamps = [x for x in lamps if x.point_area in threshold]
         self.__lamps = lamps
-        self.__set_calculated('greyscales')
+        self.__set_calculated('grayscales')
         self.__set_calculated('point_areas')
         return lamps
 
@@ -431,8 +431,8 @@ calcdict = {
     'rotated_rects': {
         'rotated_rect_angle': lambda l: abs(l.rotated_rect_angle-90)/90
     },
-    'greyscales': {
-        'greyscale': lambda l: l.greyscale/255,
+    'grayscales': {
+        'grayscale': lambda l: l.grayscale/255,
     },
     'point_areas': {
         'point_area': lambda l: l.point_area/2048,
@@ -443,7 +443,7 @@ enabled_props = [
     'contours',
     'bounding_rects',
     'rotated_rects',
-    'greyscales',
+    'grayscales',
     'point_areas',
 ]
 
@@ -460,7 +460,7 @@ if __name__ == '__main__':
             'bounding_rects',
             'rotated_rects',
             # 'ellipses',
-            'greyscales',
+            'grayscales',
             'point_areas',
         ])
         exit = pipe(

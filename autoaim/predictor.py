@@ -11,7 +11,7 @@ Author:
 import math
 import cv2
 import numpy as np
-from autoaim import helpers, aimmat, AimMat, DataLoader, pipe
+from autoaim import helpers, Toolbox, ToolboxConfig, calcdict, DataLoader, pipe
 from toolz import curry
 
 
@@ -34,41 +34,42 @@ class Predictor():
         w_lamp = self.w_lamp
         w_pair = self.w_pair
         w_angle = self.w_angle
-        calcdict = aimmat.calcdict
-        # modes
-        pair_cheat_boost = 0
+        # config
         if mode == 'red':
-            f = AimMat(img)
+            config = ToolboxConfig(
+                {'target_color': 'red', 'hsv_lower_value': 100})
         elif mode == 'blue':
-            f = AimMat(img, channel=lambda c: cv2.subtract(c[0], c[2]))
-        elif mode == 'white':
-            f = AimMat(img, channel=lambda c: c[0])
-        elif mode == 'angle':
-            f = AimMat(img, channel=lambda c: c[0])
-            pair_cheat_boost = 1
-        elif mode == 'old':
-            f = AimMat(img,
-                       preprocess=False,
-                       channel=lambda c: c[1],
-                       binary_threshold_scale=lambda t: (255-t)*0.5+t)
-        f.calc(self.props)
+            config = ToolboxConfig(
+                {'target_color': 'blue', 'hsv_lower_value': 100})
+        toolbox = Toolbox(config)
+        pipe(img,
+             toolbox.start,
+             toolbox.undistort,
+             toolbox.split_channels,
+             toolbox.preprocess,
+             toolbox.binarize,
+             #  toolbox.split_hsv,
+             toolbox.find_contours,
+             toolbox.calc_features,
+             )
+        toolbox.calc(self.props)
         # get x_keys
         x_keys = []
         for prop in self.props:
             for x_key in calcdict.get(prop, []):
                 x_keys += [x_key]
         # get x and calc y
-        for lamp in f.lamps:
+        for lamp in toolbox.data.lamps:
             x = np.array([lamp.x[k] for k in x_keys] + [1])
             lamp.y = sigmoid(x.dot(w_lamp))  # score
         # lamp filter
-        f.lamps = [l for l in f.lamps if l.y > lamp_threshold]
+        toolbox.data.lamps = [
+            l for l in toolbox.data.lamps if l.y > lamp_threshold]
         # pairs
-        f.calc_pairs()
-        for pair in f.pairs:
+        toolbox.match_pairs()
+        for pair in toolbox.data.pairs:
             x = np.array(pair.x + [1])
             y = x.dot(np.transpose(w_pair))
-            y[1] += pair_cheat_boost
             pair._y = y  # classification score
             pair.y = np.max(y)  # score
             pair.label = np.argmax(y)  # label
@@ -76,32 +77,31 @@ class Predictor():
             angley = anglex.dot(np.transpose(w_angle))
             pair.angle = angley[0]
         # lamp filter
-        f.pairs = [l for l in f.pairs if l.label < 2]
+        toolbox.data.pairs = [l for l in toolbox.data.pairs if l.label < 2]
         # debug
         if debug:
             pipe(
                 img.copy(),
-                # f.mat.copy(),
-                # f.binary_mat.copy(),
-                f.draw_contours,
-                f.draw_bounding_rects,
-                # f.draw_texts()(
+                # toolbox.mat.copy(),
+                # toolbox.binary_mat.copy(),
+                toolbox.draw_contours,
+                toolbox.draw_bounding_rects,
+                # toolbox.draw_texts()(
                 #     lambda l: '{:.2f}'.format(l.y)
                 # ),
-                f.draw_pair_bounding_rects,
-                f.draw_pair_bounding_text()(
+                toolbox.draw_pair_bounding_rects,
+                toolbox.draw_pair_bounding_text()(
                     lambda l: '{:.2f}'.format(l.y)
                 ),
                 curry(helpers.showoff)(timeout=timeout, update=True)
             )
-        return f
+        return toolbox
 
 
 if __name__ == '__main__':
-    for i in range(705, 1000, 1):
-        img_url = 'data/test_fu_1/{}.jpeg'.format(i)
+    for i in range(135, 250, 1):
+        img_url = 'data/test18/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-        predictor = Predictor('model/weights/lamp.csv',
-                              'model/weights/pair.csv', 'model/weights/angle.csv')
-        predictor.predict(img, mode='blue', timeout=500)
+        predictor = Predictor('lamp.csv', 'pair.csv', 'angle.csv')
+        predictor.predict(img, mode='red', timeout=500)

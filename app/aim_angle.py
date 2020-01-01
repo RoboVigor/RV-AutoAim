@@ -102,7 +102,7 @@ def send_packet():
 
 
 def aim_enemy():
-    def aim(serial=True, lamp_weight='lamp.csv', pair_weight='pair.csv', angle_weight='angle.csv', mode='red', gui_update=None):
+    def aim(serial=True, lamp_weight='model/weights/lamp.csv', pair_weight='model/weights/pair.csv', angle_weight='model/weights/angle.csv', mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # config
@@ -144,15 +144,15 @@ def aim_enemy():
 
             ##### locate target #####
 
-            toolbox = predictor.predict(
+            aimmat = predictor.predict(
                 img,
                 mode=mode,
                 debug=False,
                 lamp_threshold=0.01
             )
             # filter out the true lamp
-            lamps = toolbox.data.lamps
-            pairs = toolbox.data.pairs
+            lamps = aimmat.lamps
+            pairs = aimmat.pairs
             # sort by confidence
             lamps.sort(key=lambda x: x.y)
             pairs.sort(key=lambda x: x.y)
@@ -213,8 +213,8 @@ def aim_enemy():
                     last_pair = pair
                     pair = pairs[-1]
                     x, y, w, h = pair.bounding_rect
-                    toolbox.data.pairs = [p for p in pairs if p.label == 0]
-                    toolbox.data.pairs = [pair]
+                    aimmat.pairs = [p for p in pairs if p.label == 0]
+                    aimmat.pairs = [pair]
                 elif len(pairs) == 1:
                     track_state = 0
                     last_pair = pair
@@ -265,7 +265,7 @@ def aim_enemy():
                 y_fix -= min(1.4777*d*d + -3.532*d - 2.1818, 8) / \
                     5.5*h  # infantry
                 # y_fix -= min(1.4777*d*d + -3.532*d - 2.1818,8)/5.5*h # infantry
-                # print(d, y_fix)
+                print(d, y_fix)
 
                 # distance between camera and barrel
                 y_fix -= h/5.5*distance_to_laser
@@ -306,10 +306,10 @@ def aim_enemy():
                     print('Target lost')
 
                 ##### set kinestate #####
-                x = target_yfix[0]/ww - 0.5
-                y = target_yfix[1]/hh - 0.5
-                # x = target_yfix_pred[0]/ww - 0.5
-                # y = target_yfix_pred[1]/hh - 0.5
+                # x = target_yfix[0]/ww - 0.5
+                # y = target_yfix[1]/hh - 0.5
+                x = target_yfix_pred[0]/ww - 0.5
+                y = target_yfix_pred[1]/hh - 0.5
 
                 # decide to shoot
                 if abs(x) < threshold_shoot and abs(y) < threshold_shoot and track_state == 0:
@@ -318,24 +318,19 @@ def aim_enemy():
                     shoot_it = 0
 
             ##### serial output #####
-            if x==0 and y==0:
-                output = [0,0]
-            else:
-                output = toolbox.calc_point_angle(*target_yfix)
-            output = [float(output[0]/15), float(-1*output[1]/15)]
-            # output = [float(x*5), float(-y*3.5)]
-            output = [miao(output[0], -0.8, 0.8),
-                      miao(output[1], -0.5, 0.5)]
-            print('{0:.2f} {1:.2f}'.format(*output))
             if serial:
+                output = [float(x*5), float(-y*3.5)]
+                output = [miao(output[0], -1.5, 1.5),
+                          miao(output[1], -1.2, 1.2)]
+                print(output)
                 new_packet = autoaim.telegram.pack(
                     0x0401, [*output, bytes([shoot_it])], seq=packet_seq)
                 packet_seq = (packet_seq+1) % 256
 
             ##### calculate fps #####
-            fpscount = fpscount % 100 + 1
-            if fpscount == 100:
-                fps = 100/(time.time() - fps_last_timestamp)
+            fpscount = fpscount % 10 + 1
+            if fpscount == 10:
+                fps = 10/(time.time() - fps_last_timestamp)
                 fps_last_timestamp = time.time()
                 # print("fps: ", fps)
 
@@ -345,22 +340,23 @@ def aim_enemy():
                 # print("height: ", h, w)
                 pipe(
                     img.copy(),
-                    # toolbox.mat.copy(),
-                    # toolbox.binary_mat.copy(),
-                    toolbox.draw_contours,
-                    toolbox.draw_bounding_rects,
-                    toolbox.draw_texts()(
-                        lambda l: l.bounding_rect[3]),
-                    # toolbox.draw_texts()(
+                    # aimmat.mat.copy(),
+                    # aimmat.binary_mat.copy(),
+                    aimmat.draw_contours,
+                    aimmat.draw_bounding_rects,
+                    aimmat.draw_texts()(
+                        lambda l: '{:.2f}'.format(l.bounding_rect[3])),
+                    # aimmat.draw_texts()(
                     #     lambda l: '{:.2f}'.format(l.bounding_rect[3])),
-                    toolbox.draw_pair_bounding_rects,
-                    # toolbox.draw_pair_bounding_text()(
+                    aimmat.draw_pair_bounding_rects,
+                    # aimmat.draw_pair_bounding_text()(
                     #     lambda l: '{:.2f}'.format(l.angle)
                     # ),
-                    curry(toolbox.draw_centers)(center=(ww/2, hh/2)),
-                    toolbox.draw_target()(target_yfix),
-                    # toolbox.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
-                    toolbox.draw_fps()(int(fps)),
+                    curry(aimmat.draw_centers)(center=(ww/2, hh/2)),
+                    # curry(aimmat.draw_centers)(center=target_yfix_pred),
+                    # aimmat.draw_target()(target_yfix_pred),
+                    # aimmat.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
+                    aimmat.draw_fps()(int(fps)),
                     curry(autoaim.helpers.showoff)(timeout=1, update=True)
                 )
     return curry(aim)
@@ -370,6 +366,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         target_color = sys.argv[2]
         print(target_color)
+        def gui_update(x): return x % 10 == 0
         if sys.argv[1] == 'production':
             threading.Thread(target=load_img).start()
             threading.Thread(target=send_packet).start()
@@ -383,7 +380,7 @@ if __name__ == '__main__':
             threading.Thread(target=aim_enemy()(
                 serial=True,
                 mode=target_color,
-                gui_update=lambda x: x % 30 == 0)).start()
+                gui_update=lambda x: x % 10 == 0)).start()
         print("THE END.")
     else:
         print("Zha hui shier? No target set.")
