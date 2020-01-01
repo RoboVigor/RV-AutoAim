@@ -95,3 +95,4 @@ ENV/
 
 data/test*/
 data/capture*/**
+data/calibration/*
