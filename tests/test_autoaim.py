@@ -49,7 +49,7 @@ class AutoAimTestSuite(unittest.TestCase):
                 'contours',
                 'bounding_rects',
                 'rotated_rects',
-                'greyscales',
+                'grayscales',
                 'point_areas',
             ])
 

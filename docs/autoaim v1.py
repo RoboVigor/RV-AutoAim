@@ -6,9 +6,9 @@ import math
 
 class Lamp():
 
-    def __init__(self, contour, rect, ellipse, greyscale, area, error):
+    def __init__(self, contour, rect, ellipse, grayscale, area, error):
         self.contour = contour
-        self.greyscale = greyscale
+        self.grayscale = grayscale
         self.ellipse = ellipse
         self.error = error
         self.x = rect[0]
@@ -92,10 +92,10 @@ class AimImageToolbox():
             cv2.drawContours(draw_mat,possible_contours,-1,(0,0,255), 1)
         return possible_contours, possible_rects
 
-    def __getLampError(self, greyscale, rect, ellipse):
+    def __getLampError(self, grayscale, rect, ellipse):
         error = []
-        error_greyscale = (255-greyscale)/35
-        error += [min(0, error_greyscale)]
+        error_grayscale = (255-grayscale)/35
+        error += [min(0, error_grayscale)]
         error += [0 if rect[3]/rect[2]>1.5 else (1.5-rect[3]/rect[2])/1.5]
         if ellipse is None:
             error += [0.5]
@@ -116,8 +116,8 @@ class AimImageToolbox():
         # find contours
         if contours is None or rects is None:
             contours, rects = self.findContours()
-        # calculate greyscale and area
-        greyscales = []
+        # calculate grayscale and area
+        grayscales = []
         areas = []
         for i in range(0, len(contours)):
             contour = contours[i]
@@ -125,8 +125,8 @@ class AimImageToolbox():
             cv2.drawContours(ROI, [contour], -1, color=255, thickness=-1)
             pts = np.where(ROI == 255)
             pts = mat[pts[0], pts[1]]
-            greyscale = sum(pts)/len(pts)
-            greyscales += [greyscale]
+            grayscale = sum(pts)/len(pts)
+            grayscales += [grayscale]
             areas += [len(pts)]
         # fit ellipse
         ellipses = []
@@ -140,11 +140,11 @@ class AimImageToolbox():
         # determine the lamp
         lamps = []
         for i in range(0, len(rects)):
-            merror = np.array(self.__getLampError(greyscales[i], rects[i], ellipses[i])).T
+            merror = np.array(self.__getLampError(grayscales[i], rects[i], ellipses[i])).T
             mweights = np.array(weights)
             error = np.dot(merror, mweights)
             if error < passline:
-                lamp = Lamp(contours[i], rects[i], ellipses[i], greyscales[i], areas[i], error)
+                lamp = Lamp(contours[i], rects[i], ellipses[i], grayscales[i], areas[i], error)
                 lamps += [lamp]#lamps.append(lamp)
         lamps.sort()
         # draw
@@ -169,7 +169,7 @@ class AimImageToolbox():
         error += [abs(this.y-other.y)]
         # area diff
         error += [abs(this.a - other.a)/this.a]
-        # greyscale
+        # grayscale
         col_begin = this.x+this.w
         col_stop = other.x
         ROI_w = col_stop - col_begin
@@ -260,7 +260,7 @@ class AimMat(AimImageToolbox):
         areaRegion = [32,5000]
         lamp_weights = [1,0.5,1]
         lamp_passline = 1.5
-        pair_weights = [0.1,1,2] # y diff;area diff; greyscale
+        pair_weights = [0.1,1,2] # y diff;area diff; grayscale
         pair_passline = 2.7
         #process
         #thresh = self.preprocess(drawConfig[0])

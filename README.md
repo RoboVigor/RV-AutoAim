@@ -37,7 +37,7 @@ pipe(img.copy(),
      aimmat.draw_rotated_rects,
      #  aimmat.draw_ellipses,
      aimmat.draw_texts()('point_area'),
-     #  aimmat.draw_texts()('greyscale'),
+     #  aimmat.draw_texts()('grayscale'),
      helpers.showoff
      )
 ```
