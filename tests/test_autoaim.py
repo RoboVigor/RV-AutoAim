@@ -40,9 +40,9 @@ class AutoAimTestSuite(unittest.TestCase):
         assert x
 
     def test_aimmat(self):
-        '''calculate features using test8'''
+        '''calculate features using test18'''
         for i in range(0, 5, 1):
-            img_url = 'data/test8/img{}.jpg'.format(i)
+            img_url = 'data/test18/img{}.jpg'.format(i)
             img = helpers.load(img_url)
             aimmat = AimMat(img)
             aimmat.calc([
@@ -54,9 +54,9 @@ class AutoAimTestSuite(unittest.TestCase):
             ])
 
     def test_predictor(self):
-        '''predicte using test8'''
+        '''predicte using test18'''
         for i in range(0, 5, 1):
-            img_url = 'data/test8/img{}.jpg'.format(i)
+            img_url = 'data/test18/img{}.jpg'.format(i)
             img = helpers.load(img_url)
             predictor = Predictor(
                 'lamp.csv', 'pair.csv', 'angle.csv')
@@ -66,13 +66,14 @@ class AutoAimTestSuite(unittest.TestCase):
 
     @helpers.time_this
     def test_fps(self):
-        '''predict 100 image from test9'''
+        '''predict 100 image from test18'''
         for i in range(0, 100, 1):
-            img_url = 'data/test9/img{}.jpg'.format(i)
+            img_url = 'data/test18/img{}.jpg'.format(i)
             img = helpers.load(img_url)
-            # predictor = Predictor('lamp.csv', 'pair.csv', 'angle.csv')
-            # lamps = predictor.predict(img, mode='red', debug=False)
-            # lamps = [x for x in lamps if x.y > 0.5]
+            predictor = Predictor('lamp.csv', 'pair.csv', 'angle.csv')
+            toolbox = predictor.predict(img, mode='red', debug=False)
+            lamps = toolbox.data.lamps
+            lamps = [x for x in lamps if x.y > 0.5]
 
 
 if __name__ == '__main__':

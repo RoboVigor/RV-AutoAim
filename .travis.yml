@@ -12,7 +12,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -n cv numpy opencv python=$TRAVIS_PYTHON_VERSION
+  - conda create -n cv numpy opencv=3.4.2 python=$TRAVIS_PYTHON_VERSION -c menpo
   - source activate cv
   - pip install -r requirements.txt
   - bash install.sh
