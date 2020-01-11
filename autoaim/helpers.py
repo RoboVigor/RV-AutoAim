@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import cv2
@@ -106,29 +105,6 @@ def coroutine(func):
     return primer
 
 
-class AttrDict(object):
-    """
-    This class supports both . and [] operators.
-    Use . in most cases and only use [] when fetching data in large batch.
-    """
-
-    def __init__(self, mapping={}):
-        super().__setattr__('data', dict(mapping))
-
-    def __setattr__(self, attr, value):
-        self.data[attr] = value
-
-    def __getattr__(self, attr):
-        if hasattr(self.data, attr):
-            return getattr(self.data, attr)
-        else:
-            try:
-                return self.data[attr]
-            except KeyError:
-                raise AttributeError
-
-    def __getitem__(self, key):
-        return self.data[key]
 
 
 if __name__ == '__main__':
