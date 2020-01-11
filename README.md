@@ -14,6 +14,7 @@ pip install -r requirements.txt
 bash install.sh
 # install developing requirements
 conda install jupyterlab -c conda-forge
+pip install PyQt5
 ```
 
 ### Usage
