@@ -111,7 +111,7 @@ def aim_enemy():
         threshold_position_changed = 70
         # autoaim
         track_state = 1  # 0:tracking, 1:lost
-        predictor = autoaim.Predictor(lamp_weight, pair_weight, angle_weight)
+        predictor = autoaim.Predictor()
         last_pair = None
         pair = None
         height_record_list = ([0 for i in range(10)])
@@ -144,16 +144,14 @@ def aim_enemy():
 
             toolbox = predictor.predict(
                 img,
-                mode=mode,
                 debug=False,
-                lamp_threshold=0.01
             )
             # filter out the true lamp
             lamps = toolbox.data.lamps
             pairs = toolbox.data.pairs
             # sort by confidence
             lamps.sort(key=lambda x: x.y)
-            pairs.sort(key=lambda x: x.y)
+            pairs.sort(key=lambda x: x.ymax)
 
             ##### analysis target #####
 
@@ -194,13 +192,8 @@ def aim_enemy():
                         y_diff = abs(y1+h1/2-hh/2)
                         center_distance = -(x_diff*x_diff + y_diff*y_diff)/5000
                         distance = h1/30
-                        angle = -abs(pair.angle)/35
                         label = pair.label*-2
-                        score = 0
-                        if track_state == 0:
-                            score = pair.y*5+target_distance+label+distance
-                        else:
-                            score = pair.y*5+center_distance+label+distance+angle
+                        score = pair.ymax*5+target_distance+label+distance
                         pair.score = score
                         pair.pairid = pairid
                         # print([pairid, pair.y, target_distance, angle,label, distance, score])
@@ -234,7 +227,7 @@ def aim_enemy():
 
                 # detect pair changed
                 if not last_pair is None and not pair is None:
-                    _ = abs(last_pair.y-pair.y)
+                    _ = abs(last_pair.ymax-pair.ymax)
                     over_threshold = _ > threshold_target_changed
                     type_changed = not pair.label == last_pair.label
                     _1 = last_pair.bounding_rect[0] + \

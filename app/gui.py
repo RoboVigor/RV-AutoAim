@@ -1,5 +1,5 @@
 
-from autoaim import helpers, Camera, ToolboxConfig, Toolbox
+from autoaim import helpers, Camera, Config, Toolbox
 from toolz import pipe, curry
 import cv2
 import time
@@ -82,7 +82,7 @@ class DisplayImageWidget(QWidget):
 
         self.setLayout(self.layout)
 
-        self.config = ToolboxConfig(
+        self.config = Config(
             {'target_color': 'red', 'hsv_lower_value': 100})
         self.toolbox = Toolbox(self.config)
         self.callback = callback

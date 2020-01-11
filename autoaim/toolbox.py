@@ -8,52 +8,13 @@ Author:
 import cv2
 import numpy as np
 from toolz import pipe, curry
-from autoaim import helpers, AttrDict
+from autoaim import helpers, AttrDict, Config, Lamp, Pair
 import math
-
-
-class Lamp(AttrDict):
-    def __init__(self, contour):
-        super().__init__({
-            'contour': contour
-        })
-
-
-class Pair(AttrDict):
-    def __init__(self, left, right):
-        super().__init__({
-            'left': left,
-            'right': right
-        })
-
-
-class ToolboxConfig(AttrDict):
-    def __init__(self, config={}):
-        _config = {
-            'camera_config': '',
-            'target_color': 'red',
-            'binary_threshold_value': None,
-            'binary_threshold_scale': 0.1,
-            'rect_area_threshold': (32, 16384),
-            'hsv_lower_value': 46,
-            'free_scaling_parameter': 0,
-            'point_area_threshold': (32, 8192),
-            'max_contour_len': 100,
-            'features': ['bounding_rect', 'rotated_rect', 'ellipse', 'contour_feature', 'angle'],
-            'camera_matrix': [
-                [1404.301464037759, 0, 615.802069602196],
-                [0, 1408.256656922631, 339.7994434183557],
-                [0, 0, 1]
-            ],
-            'distortion_coefficients': [-0.4432836554055214, 0.44834903270408, -0.0008076318909730519, -0.004013115215051138, 0.8668211330541649]
-        }
-        _config.update(config)
-        super().__init__(_config)
 
 
 class Toolbox():
 
-    def __init__(self, config=ToolboxConfig()):
+    def __init__(self, config=Config()):
         """receive a image with rgb channel"""
         self.config = config
         self.mat = AttrDict()
@@ -160,7 +121,7 @@ class Toolbox():
 
     def calc_features(self, mat):
         methods = {
-            'bounding_rect':  self.calc_bounding_rects,
+            'bounding_rect': self.calc_bounding_rects,
             'rotated_rect': self.calc_rotated_rects,
             'contour_feature': self.calc_contour_features,
             'ellipse': self.calc_ellipses,
@@ -259,35 +220,6 @@ class Toolbox():
                 left = lamps[i]
                 right = lamps[j]
                 pair = Pair(left, right)
-                (x1, y1, w1, h1), (x2, y2, w2,
-                                   h2) = left.bounding_rect, right.bounding_rect
-                if y1 > y2:
-                    y1 = right.bounding_rect[1]
-                    h1 = right.bounding_rect[3]
-                    y2 = left.bounding_rect[1]
-                    h2 = left.bounding_rect[3]
-                pair.bounding_rect = (x1, y1, x2-x1+w2, y2-y1+h2)
-                x, y, w, h = pair.bounding_rect
-                if w/h > 8 or w/h < 2:
-                    continue
-                pair.ratio = w/((h1+h2)/2)
-                pair.x = [
-                    abs(pair.ratio-3.17),
-                    abs(pair.ratio-6.2),
-                    abs(y2-y1)/200,
-                    abs(w2-w1)/200,
-                    abs(h2-h1)/200,
-                    abs(left.rotated_rect_angle-90)/90,
-                    abs(right.rotated_rect_angle-90)/90,
-                    abs(left.rotated_rect_angle-right.rotated_rect_angle)/90
-                ]
-                pair.anglex = [
-                    (y2-y1)/200,
-                    (left.rotated_rect_angle-90)/90,
-                    (right.rotated_rect_angle-90)/90,
-                    w1/w2,
-                    w2/w1,
-                ]
                 pairs += [pair]
         self.data.pairs = pairs
         return mat
@@ -404,34 +336,13 @@ class Toolbox():
         return curry(draw)
 
 
-calcdict = {
-    'bounding_rects': {
-        'bounding_rect_ratio': lambda l: l.bounding_rect_ratio
-    },
-    'rotated_rects': {
-        'rotated_rect_angle': lambda l: abs(l.rotated_rect_angle-90)/90
-    },
-    'grayscales': {
-        'grayscale': lambda l: l.grayscale/255,
-    },
-    'point_areas': {
-        'point_area': lambda l: l.point_area/2048,
-    }
-}
-
-@helpers.time_this
-def calc(toolbox):
-    for i in range(10000):
-        toolbox.undistortPoints([(1.0,1.0)])
-
 if __name__ == '__main__':
-    for i in range(1035, 1040, 1):
-        img_url = 'data/test15/{}.jpeg'.format(i)
+    for i in range(0, 100, 1):
+        img_url = 'data/test18/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-        config = ToolboxConfig({'target_color': 'red', 'hsv_lower_value': 100})
+        config = Config({'target_color': 'red', 'hsv_lower_value': 100})
         toolbox = Toolbox(config)
-        calc(toolbox)
         pipe(img,
              toolbox.start,
              helpers.peek,
