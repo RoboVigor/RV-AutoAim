@@ -59,9 +59,9 @@ class AutoAimTestSuite(unittest.TestCase):
             img_url = 'data/test8/img{}.jpg'.format(i)
             img = helpers.load(img_url)
             predictor = Predictor(
-                'model/weights/lamp.csv', 'model/weights/pair.csv', 'model/weights/angle.csv')
+                'lamp.csv', 'pair.csv', 'angle.csv')
             aimmat = predictor.predict(img, mode='red', debug=False)
-            lamps = aimmat.lamps
+            lamps = aimmat.data.lamps
             lamps = [x for x in lamps if x.y > 0.5]
 
     @helpers.time_this
@@ -70,7 +70,7 @@ class AutoAimTestSuite(unittest.TestCase):
         for i in range(0, 100, 1):
             img_url = 'data/test9/img{}.jpg'.format(i)
             img = helpers.load(img_url)
-            # predictor = Predictor('model/weights/lamp.csv', 'model/weights/pair.csv', 'model/weights/angle.csv')
+            # predictor = Predictor('lamp.csv', 'pair.csv', 'angle.csv')
             # lamps = predictor.predict(img, mode='red', debug=False)
             # lamps = [x for x in lamps if x.y > 0.5]
 
