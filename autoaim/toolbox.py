@@ -36,6 +36,7 @@ class ToolboxConfig(AttrDict):
             'binary_threshold_scale': 0.1,
             'rect_area_threshold': (32, 16384),
             'hsv_lower_value': 46,
+            'free_scaling_parameter': 0,
             'point_area_threshold': (32, 8192),
             'max_contour_len': 100,
             'features': ['bounding_rect', 'rotated_rect', 'ellipse', 'contour_feature', 'angle'],
@@ -74,8 +75,21 @@ class Toolbox():
         '''mat -> mat'''
         camera_matrix = np.array(self.config.camera_matrix)
         distortion_coefficients = np.array(self.config.distortion_coefficients)
-        mat = cv2.undistort(mat, camera_matrix, distortion_coefficients)
+        h, w = mat.shape[:2]
+        new_camera_matrix, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, distortion_coefficients, (w,h),self.config.free_scaling_parameter,(w,h))
+        map1, map2 = cv2.initUndistortRectifyMap(camera_matrix, distortion_coefficients, None, new_camera_matrix, (w,h), cv2.CV_32FC1)
+        mat = cv2.remap(mat, map1, map2, cv2.INTER_CUBIC)
+        # mat = cv2.undistort(mat, camera_matrix, distortion_coefficients, None, new_camera_matrix)
+        x, y, w, h = roi
+        mat = mat[y:y+h, x:x+w]
         return mat
+
+    def undistort_points(self, points):
+        '''points -> points'''
+        np_points = np.array([points])
+        camera_matrix = np.array(self.config.camera_matrix)
+        distortion_coefficients = np.array(self.config.distortion_coefficients)
+        return cv2.undistortPoints(np_points,camera_matrix, distortion_coefficients).tolist()
 
     def split_channels(self, mat):
         '''mat -> grayscale_mat'''
@@ -405,13 +419,19 @@ calcdict = {
     }
 }
 
+@helpers.time_this
+def calc(toolbox):
+    for i in range(10000):
+        toolbox.undistortPoints([(1.0,1.0)])
+
 if __name__ == '__main__':
-    for i in range(135, 250, 1):
-        img_url = 'data/test18/img{}.jpg'.format(i)
+    for i in range(1035, 1040, 1):
+        img_url = 'data/test15/{}.jpeg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
         config = ToolboxConfig({'target_color': 'red', 'hsv_lower_value': 100})
         toolbox = Toolbox(config)
+        calc(toolbox)
         pipe(img,
              toolbox.start,
              helpers.peek,
