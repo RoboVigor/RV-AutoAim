@@ -46,6 +46,8 @@ class Pair(AttrDict):
 class Config(AttrDict):
     def __init__(self, config={}):
         _config = {
+            # overall
+            'config_name': 'default_config',
             # camera
             'camera_config': '',
             # toolbox
@@ -56,8 +58,9 @@ class Config(AttrDict):
             'hsv_lower_value': 46,
             'free_scaling_parameter': 0,
             'point_area_threshold': (32, 8192),
+            'pair_ratio_threshold':(2,8),
             'max_contour_len': 100,
-            'features': ['bounding_rect', 'rotated_rect', 'ellipse', 'contour_feature', 'angle'],
+            'features': ['bounding_rect', 'rotated_rect', 'ellipse', 'contour_feature'],
             'camera_matrix': [
                 [1404.301464037759, 0, 615.802069602196],
                 [0, 1408.256656922631, 339.7994434183557],

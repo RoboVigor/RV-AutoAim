@@ -315,7 +315,7 @@ if __name__ == '__main__':
 
     def gui_update(x): return x % 10 == 0
     if len(sys.argv) > 1 and sys.argv[1] == 'production':
-        threading.Thread(target=load_img).start()
+        threading.Thread(target=process_image).start()
         threading.Thread(target=send_packet).start()
         threading.Thread(target=aim_enemy()(
             serial=True,

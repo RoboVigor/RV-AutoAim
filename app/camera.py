@@ -17,7 +17,7 @@ hh = 360
 fpscount = 0
 
 
-def load_img():
+def process_image():
     # set up camera
     global aim, new_img, ww, hh, fpscount
 

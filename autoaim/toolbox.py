@@ -14,8 +14,10 @@ import math
 
 class Toolbox():
 
-    def __init__(self, config=Config()):
+    def __init__(self, config=None):
         """receive a image with rgb channel"""
+        if config is None:
+            config = Config()
         self.config = config
         self.mat = AttrDict()
         self.data = AttrDict()
@@ -60,7 +62,7 @@ class Toolbox():
             grayscale = cv2.subtract(c[2], c[0])
         elif mode == 'blue':
             grayscale = cv2.subtract(c[0], c[2])
-        elif mode == 'none':
+        else:
             grayscale = c[0]
         # bgr
         self.mat.grayscale = grayscale
@@ -82,6 +84,9 @@ class Toolbox():
             lower_hsv = np.array([100, 43, self.config.hsv_lower_value])
             upper_hsv = np.array([124, 255, 255])
             binary = cv2.inRange(hsv, lower_hsv, upper_hsv)
+        else:
+            print('split_hsv() disabled for target_color "'+str(mode)+'". split_channel() is used instead.')
+            return pipe(mat, self.split_channels, self.preprocess, self.binarize)
         self.mat.binary = binary
         return self.mat.binary
 
@@ -220,22 +225,24 @@ class Toolbox():
                 left = lamps[i]
                 right = lamps[j]
                 pair = Pair(left, right)
-                pairs += [pair]
+                # calc bounding_rect and ratio (merge into calc_features?)
+                pair.lx, pair.ly, pair.lw, pair.lh = left.bounding_rect
+                pair.rx, pair.ry, pair.rw, pair.rh = right.bounding_rect
+                if pair.ly < pair.ry:
+                    pair.bounding_rect = (pair.lx, pair.ly, pair.rx-pair.lx+pair.rw, pair.ry-pair.ly+pair.rh)
+                else:
+                    pair.bounding_rect = (pair.lx, pair.ry, pair.rx-pair.lx+pair.rw, pair.ly-pair.ry+pair.lh)
+                _, _, w, h = pair.bounding_rect
+                pair.ratio = w/((pair.lh+pair.rh)/2)
+                threshold = self.config.pair_ratio_threshold
+                if pair.ratio>threshold[0] and pair.ratio<threshold[1]:
+                    pairs += [pair]
         self.data.pairs = pairs
         return mat
 
     # ===================
     # Helper
     # ===================
-    def calc(self, props):
-        # calc the features
-        for lamp in self.data.lamps:
-            x = {}
-            for prop in props:
-                for x_key in calcdict.get(prop, []):
-                    func = calcdict[prop][x_key]
-                    x[x_key] = func(lamp)
-            lamp.x = x
 
     def draw_contours(self, img):
         contours = self.data.contours
@@ -250,7 +257,7 @@ class Toolbox():
         return img
 
     def draw_rotated_rects(self, img):
-        rects = [l.bounding_rect for l in self.data.lamps]
+        rects = [l.rotated_rect for l in self.data.lamps]
         for rect in rects:
             box = cv2.boxPoints(rect)
             box = np.int0(box)
@@ -341,7 +348,7 @@ if __name__ == '__main__':
         img_url = 'data/test18/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-        config = Config({'target_color': 'red', 'hsv_lower_value': 100})
+        config = Config({'target_color': 'white', 'hsv_lower_value': 100})
         toolbox = Toolbox(config)
         pipe(img,
              toolbox.start,
@@ -357,7 +364,7 @@ if __name__ == '__main__':
              toolbox.calc_features,
              toolbox.match_pairs,
              helpers.color,
-             toolbox.draw_contours,
+             toolbox.draw_rotated_rects,
              toolbox.draw_texts()(lambda x: x.angle[0]),
              helpers.showoff,
              )

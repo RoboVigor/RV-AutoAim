@@ -7,7 +7,7 @@ from . import camera
 from .toolbox import Toolbox
 from .camera import Camera
 from .aimmat import AimMat, pipe
-from . import dataloader
-from .dataloader import DataLoader
 from . import predictor
 from .predictor import Predictor
+from . import dataloader
+from .dataloader import DataLoader

@@ -76,7 +76,7 @@ def pid_control(target, feedback, pid_args=None):
     return pid_output_p+pid_output_i+pid_output_d
 
 
-def load_img():
+def process_image():
     # set up camera
     global aim, new_img, ww, hh
     camera = autoaim.Camera(0)
@@ -371,14 +371,14 @@ if __name__ == '__main__':
         target_color = sys.argv[2]
         print(target_color)
         if sys.argv[1] == 'production':
-            threading.Thread(target=load_img).start()
+            threading.Thread(target=process_image).start()
             threading.Thread(target=send_packet).start()
             threading.Thread(target=aim_enemy()(
                 serial=True,
                 mode=target_color,
                 gui_update=None)).start()
         else:
-            threading.Thread(target=load_img).start()
+            threading.Thread(target=process_image).start()
             threading.Thread(target=send_packet).start()
             threading.Thread(target=aim_enemy()(
                 serial=True,

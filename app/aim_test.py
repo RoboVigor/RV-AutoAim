@@ -77,14 +77,14 @@ def pid_control(target, feedback, pid_args=None):
     return pid_output_p+pid_output_i+pid_output_d
 
 
-def load_img():
+def process_image():
     # set up camera
     global new_img, aim
-    for i in range(0, 300, 1):
+    for i in range(0, 244, 1):
         img_url = 'data/test19/img{}.jpg'.format(i)
         print('Load {}'.format(img_url), end=' ')
         new_img = autoaim.helpers.load(img_url)
-        cv2.waitKey(100)
+        cv2.waitKey(1000)
     aim = False
 
 
@@ -100,7 +100,7 @@ def send_packet():
 
 
 def aim_enemy():
-    def aim(serial=True, lamp_weight='lamp.csv', pair_weight='pair.csv', angle_weight='angle.csv', mode='red', gui_update=None):
+    def aim(serial=True,mode='red', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # config
@@ -111,7 +111,8 @@ def aim_enemy():
         threshold_position_changed = 70
         # autoaim
         track_state = 1  # 0:tracking, 1:lost
-        predictor = autoaim.Predictor()
+        config = autoaim.Config({'target_color':mode})
+        predictor = autoaim.Predictor(config)
         last_pair = None
         pair = None
         height_record_list = ([0 for i in range(10)])
@@ -151,7 +152,7 @@ def aim_enemy():
             pairs = toolbox.data.pairs
             # sort by confidence
             lamps.sort(key=lambda x: x.y)
-            pairs.sort(key=lambda x: x.ymax)
+            pairs.sort(key=lambda x: x.y_max)
 
             ##### analysis target #####
 
@@ -347,7 +348,7 @@ def aim_enemy():
                     # ),
                     curry(toolbox.draw_centers)(center=(ww/2, hh/2)),
                     # curry(toolbox.draw_centers)(center=target_yfix_pred),
-                    # toolbox.draw_target()(target_yfix_pred),
+                    toolbox.draw_target()(target_yfix),
                     # toolbox.draw_target()(((x+0.5)*ww, (y+0.5)*hh)),
                     toolbox.draw_fps()(int(fps)),
                     curry(autoaim.helpers.showoff)(timeout=1, update=True)
@@ -356,7 +357,7 @@ def aim_enemy():
 
 
 if __name__ == '__main__':
-    threading.Thread(target=load_img).start()
+    threading.Thread(target=process_image).start()
     threading.Thread(target=aim_enemy()(
         serial=False,
         mode='red',

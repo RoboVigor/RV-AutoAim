@@ -32,16 +32,15 @@ def preprocess(t, h):
 
 
 def load(filename):
-    header, data = autoaim.DataLoader().read_csv(filename)
+    header, data = autoaim.helpers.read_csv(filename)
     data = torch.Tensor(data).to(device)
-    data = preprocess(data, header)
+    data = preprocess(data,header)
     x = data[:, :-1]
     y = data[:, -1:]
     return x, y, header
 
-
-x_train, y_train, header = load('train.csv')
-x_test, y_test, _ = load('test.csv')
+x_train, y_train, header = load('test_lamp_train.csv')
+x_test, y_test, _ = load('test_lamp_test.csv')
 
 train_dataset_size = x_train.size(0)
 test_dataset_size = x_test.size(0)
@@ -153,10 +152,10 @@ def analyse(x_anls, y_anls, threshold):
 
 def save(filename):
     dataloader = autoaim.DataLoader()
-    dataloader.new_csv(filename, autoaim.aimmat.enabled_props)
+    autoaim.helpers.new_csv(filename, autoaim.aimmat.enabled_props)
     w = [wi.data.cpu() for wi in model.parameters()]
     w = torch.cat((w[0][0], w[1])).numpy()
-    dataloader.append_csv(filename, w)
+    autoaim.helpers.append_csv(filename, w)
 
 
 def test(n):

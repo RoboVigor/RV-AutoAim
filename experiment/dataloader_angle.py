@@ -31,7 +31,7 @@ class DataLoader():
     # Dataset Function
     # ===================
 
-    def load_datasets(self, datasets, props, filename='test', cut=0.8):
+    def generate_datasets(self, datasets, props, filename='test', cut=0.8):
         '''Example input:
         datasets = ['test0', 'test1', ...]
         props = ['contour', 'bounding_rect', ...]
@@ -47,19 +47,19 @@ class DataLoader():
                 dataset_path) if os.path.isfile(dataset_path+'/'+x)]
             random.shuffle(files)
             cut_len = int(cut*len(files))
-            self.load_images('train', dataset, files[0:cut_len])
-            self.load_images('test', dataset, files[cut_len:-1])
+            self.process_images('train', dataset, files[0:cut_len])
+            self.process_images('test', dataset, files[cut_len:-1])
 
-    def load_images(self, data_type, dataset, images):
+    def process_images(self, data_type, dataset, images):
         global angle
         for image in images:
-            aimmat = self.load_img(dataset, image)
+            aimmat = self.process_image(dataset, image)
             if aimmat:
                 pair = aimmat.pairs[0]
                 row = pair.anglex + [pair.angle]
                 self.append_csv(self.join('angle', data_type), row)
 
-    def load_img(self, dataset, image):
+    def process_image(self, dataset, image):
         '''return `exit`'''
         i = int(re.findall(r"\d+",os.path.splitext(image)[0])[0])
         print(i)
@@ -118,23 +118,23 @@ class DataLoader():
         for props in self.props:
             if props in aimmat.calcdict:
                 row += aimmat.calcdict[props].keys()
-        row += ['bingo']
+        row += ['label']
         return row
 
     # ===================
     # Debug Function
     # ===================
 
-    def draw_bingo_lamps(self):
-        '''Usage:dataloader.draw_bingo_lamps()(aimmat)'''
+    def draw_label_lamps(self):
+        '''Usage:dataloader.draw_label_lamps()(aimmat)'''
         def draw(aimmat, img):
             lamps = aimmat.lamps
-            boom_rects = [x.bounding_rect for x in lamps if not x.bingo]
-            bingo_rects = [x.bounding_rect for x in lamps if x.bingo]
+            boom_rects = [x.bounding_rect for x in lamps if not x.label]
+            label_rects = [x.bounding_rect for x in lamps if x.label]
             for rect in boom_rects:
                 x, y, w, h = rect
                 cv2.rectangle(img, (x, y), (x+w, y+h), (200, 0, 200), 1)
-            for rect in bingo_rects:
+            for rect in label_rects:
                 x, y, w, h = rect
                 cv2.rectangle(img, (x, y), (x+w, y+h), (200, 0, 0), 2)
             return img
@@ -182,4 +182,4 @@ if __name__ == '__main__':
         'test17',
     ]
     dataloader = DataLoader(debug=True)
-    dataloader.load_datasets(datasets, props)
+    dataloader.generate_datasets(datasets, props)

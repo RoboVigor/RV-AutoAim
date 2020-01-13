@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+import csv
 import cv2
 import numpy
 from functools import wraps
@@ -105,8 +107,32 @@ def coroutine(func):
     return primer
 
 
+data_path = os.path.abspath(__file__ + '/../../data/')
+
+
+def new_csv(filename, row=''):
+    '''Create a new csv file and write the table's header to it.'''
+    with open(data_path + '/'+filename, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(row)
+
+
+def append_csv(filename, row=''):
+    with open(data_path + '/'+filename, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(row)
+
+
+def read_csv(filename):
+    with open(data_path + '/'+filename, 'r') as csvfile:
+        rows = list(csv.reader(csvfile))
+        header = rows[0]
+        table = [[float(y) for y in x] for x in rows[1:]]
+        return header, table
 
 
 if __name__ == '__main__':
-    img = load('data/test0/img2.jpg')
+    img = load('data/test18/img0.jpg')
     showoff(img)
