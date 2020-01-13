@@ -92,7 +92,5 @@ ENV/
 
 # vscode
 .vscode/settings.json
-
-data/test*/
-data/capture*/**
-data/calibration/*
+data/*/**
+data/*
