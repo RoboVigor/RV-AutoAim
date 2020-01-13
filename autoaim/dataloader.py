@@ -56,6 +56,7 @@ class DataLoader():
 
     def process_images(self, data_type, dataset, images):
         for image_name in images:
+            print(dataset+'/'+image_name)
             img = helpers.load(helpers.data_path+'/'+dataset+'/'+image_name)
             labeled_rects = self.load_label(dataset, image_name)
             lamps, pairs = self.predictor.label(img, labeled_rects)
@@ -141,7 +142,8 @@ class DataLoader():
 
 if __name__ == '__main__':
     datasets = [
-        'test18'
+        'test18',
+        'test19',
     ]
     config = Config({'config_name': 'test'})
     dataloader = DataLoader(config)

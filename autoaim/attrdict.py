@@ -55,7 +55,7 @@ class Config(AttrDict):
             'binary_threshold_value': None,
             'binary_threshold_scale': 0.1,
             'rect_area_threshold': (32, 16384),
-            'hsv_lower_value': 46,
+            'hsv_lower_value': 100,
             'free_scaling_parameter': 0,
             'point_area_threshold': (32, 8192),
             'pair_ratio_threshold':(2,8),

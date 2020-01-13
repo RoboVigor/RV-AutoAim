@@ -109,7 +109,7 @@ class Predictor():
              self.toolbox.calc_features,
              )
 
-    def predict(self, img, debug=True, timeout=50):
+    def predict(self, img, debug=False, timeout=50):
         self.calculate_lamps(img)
         # mark the lamps
         x_lamp = self.resolve_features(
@@ -140,9 +140,6 @@ class Predictor():
                 img.copy(),
                 self.toolbox.draw_contours,
                 self.toolbox.draw_bounding_rects,
-                # toolbox.draw_texts()(
-                #     lambda l: '{:.2f}'.format(l.y)
-                # ),
                 self.toolbox.draw_pair_bounding_rects,
                 self.toolbox.draw_pair_bounding_text()(
                     lambda p: '{:.2f}'.format(p.y_max)
@@ -159,13 +156,6 @@ class Predictor():
         self.toolbox.match_pairs()
         lamps = self.toolbox.data.lamps
         pairs = self.toolbox.data.pairs
-        # pipe(
-        #     img,
-        #     self.toolbox.draw_contours,
-        #     self.toolbox.draw_bounding_rects,
-        #     self.toolbox.draw_pair_bounding_rects,
-        #     curry(helpers.showoff)(timeout=1000, update=True)
-        # )
 
         # save features to lamps and pairs
         x_lamp = self.resolve_features(

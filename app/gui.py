@@ -1,5 +1,5 @@
 
-from autoaim import helpers, Camera, Config, Toolbox
+from autoaim import helpers, Camera, Config, Predictor
 from toolz import pipe, curry
 import cv2
 import time
@@ -30,6 +30,7 @@ class CameraThread(QThread):
             for i in range(0, 240):
                 img_url = 'data/test19/img{}.jpg'.format(i)
                 image = helpers.load(img_url)
+                image = cv2.resize(image,(0,0),fx=2,fy=2)
                 self.signal.emit(image)
                 time.sleep(self.delay/1000)
 
@@ -84,7 +85,8 @@ class DisplayImageWidget(QWidget):
 
         self.config = Config(
             {'target_color': 'red', 'hsv_lower_value': 100})
-        self.toolbox = Toolbox(self.config)
+        self.predictor = Predictor(self.config)
+        self.toolbox = self.predictor.toolbox
         self.callback = callback
 
     def start_capture(self):
@@ -113,17 +115,12 @@ class DisplayImageWidget(QWidget):
         self.show_image(self.image)
 
     def process(self, img):
+        self.predictor.predict(img)
         return pipe(img,
-                    self.toolbox.start,
-                    # self.toolbox.undistort,
-                    self.toolbox.split_hsv,
-                    self.toolbox.find_contours,
-                    self.toolbox.calc_features,
-                    self.toolbox.match_pairs,
-                    helpers.color,
                     self.toolbox.draw_contours,
                     self.toolbox.draw_bounding_rects,
-                    self.toolbox.draw_texts()(lambda x: x.angle[0]),
+                    # self.toolbox.only_that_pair,
+                    self.toolbox.draw_pair_bounding_rects
                     )
 
 

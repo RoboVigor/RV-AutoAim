@@ -150,7 +150,8 @@ class Toolbox():
             x for x in lamps if x.bounding_rect_area in threshold]
         return mat
 
-    def calc_point_angle(self, x_screen, y_screen):
+    def calc_point_angle(self, point):
+        x_screen, y_screen = point
         camera_matrix = np.array(self.config.camera_matrix)
         cx = camera_matrix[0, 2]
         cy = camera_matrix[1, 2]
@@ -318,16 +319,25 @@ class Toolbox():
         cv2.line(img, (x, y+14), (x, y+18), (94, 148, 213), 1)
         return img
 
+    def only_that_pair(self, img):
+        if len(self.data.pairs)>0:
+            pairs = self.data.pairs
+            pairs.sort(key=lambda x: x.y_max)
+            self.data.pairs = [pairs[0]]
+        return img
+
     def draw_pair_bounding_rects(self, img):
         for pair in self.data.pairs:
             rect = pair.bounding_rect
             x, y, w, h = rect
-            if not hasattr(pair, 'label'):
+            if not hasattr(pair, 'y_label'):
                 cv2.rectangle(img, (x, y), (x+w, y+h), (0, 200, 200), 2)
-            elif pair.label == 0:
+            elif pair.y_label == 0:
                 cv2.rectangle(img, (x, y), (x+w, y+h), (0, 200, 0), 2)
-            elif pair.label == 1:
+            elif pair.y_label == 1:
                 cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 200), 2)
+            else:
+                cv2.rectangle(img, (x, y), (x+w, y+h), (200, 200, 0), 2)
         return img
 
     def draw_pair_bounding_text(self):
