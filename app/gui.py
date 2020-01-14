@@ -27,12 +27,13 @@ class CameraThread(QThread):
             #         self.image = QImage(
             #             img.data, img.shape[1], img.shape[0], QImage.Format_RGB888).rgbSwapped()
             #         self.signal.emit(self.image)
-            for i in range(0, 240):
+            for i in range(0, 120, 1):
                 img_url = 'data/test19/img{}.jpg'.format(i)
                 image = helpers.load(img_url)
-                image = cv2.resize(image,(0,0),fx=2,fy=2)
+                image = cv2.resize(image, (0, 0), fx=1.5, fy=1.5)
                 self.signal.emit(image)
                 time.sleep(self.delay/1000)
+
 
 class QSetting(QWidget):
     def __init__(self, name, scope, default, callback):
@@ -62,14 +63,17 @@ class QSetting(QWidget):
         self.setLayout(self.layout)
 
         self.lock = False
+
     def slider_value_changed(self, value):
         self.textbox.setText(str(value))
         self.callback(value)
+
     def textbox_value_changed(self, value):
         self.slider.setValue(int(value))
 
+
 class DisplayImageWidget(QWidget):
-    def __init__(self, callback):
+    def __init__(self, callback=None):
         super(DisplayImageWidget, self).__init__()
 
         self.layout = QVBoxLayout()
@@ -86,13 +90,15 @@ class DisplayImageWidget(QWidget):
         self.config = Config(
             {'target_color': 'red', 'hsv_lower_value': 100})
         self.predictor = Predictor(self.config)
+        self.camera_thread = CameraThread(0)
         self.toolbox = self.predictor.toolbox
         self.callback = callback
+        self.image = None
 
     def start_capture(self):
-        self.callback()
+        if self.callback is not None:
+            self.callback()
         self.start_button.setParent(None)
-        self.camera_thread = CameraThread(0)
         self.camera_thread.signal.connect(self.show_image)
         self.camera_thread.start()
 
@@ -112,15 +118,20 @@ class DisplayImageWidget(QWidget):
         self.image_frame.setPixmap(QPixmap.fromImage(image))
 
     def update(self):
-        self.show_image(self.image)
+        if self.image is not None:
+            self.show_image(self.image)
 
     def process(self, img):
         self.predictor.predict(img)
         return pipe(img,
                     self.toolbox.draw_contours,
                     self.toolbox.draw_bounding_rects,
-                    # self.toolbox.only_that_pair,
-                    self.toolbox.draw_pair_bounding_rects
+                    self.toolbox.draw_pair_bounding_rects,
+                    self.toolbox.draw_pair_index,
+                    self.toolbox.draw_pair_bounding_text()(
+                        lambda p: '{0}:{1:.1f}'.format(p.y_label, p.y_max),
+                        text_position='bottom'
+                    ),
                     )
 
 
@@ -134,14 +145,15 @@ class StartWindow(QMainWindow):
         self.layout = QVBoxLayout(self.central_widget)
         self.setCentralWidget(self.central_widget)
 
-        self.widget_image = DisplayImageWidget(self.show_settings)
+        self.widget_image = DisplayImageWidget()
         self.layout.addWidget(self.widget_image)
 
-    def show_settings(self):
-        self.delay_setting = QSetting('fps', (1,20), 5, self.widget_image.set_delay)
+        self.delay_setting = QSetting(
+            'fps', (1, 20), 5, self.widget_image.set_delay)
         self.layout.addWidget(self.delay_setting)
 
-        self.hsv_setting = QSetting('hsv', (46,255), 100, self.widget_image.set_hsv)
+        self.hsv_setting = QSetting(
+            'hsv', (46, 255), 100, self.widget_image.set_hsv)
         self.layout.addWidget(self.hsv_setting)
 
 

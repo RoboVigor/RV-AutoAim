@@ -271,15 +271,24 @@ class Toolbox():
             cv2.ellipse(img, ellipse, (0, 255, 0), 2)
         return img
 
+    def put_text(self, img, text, position,font=cv2.FONT_HERSHEY_PLAIN, fontsize=1.2, thickness=1, align='left'):
+        text_size = cv2.getTextSize(text, font, fontsize, thickness)[0]
+        text_width = text_size[0]
+        text_height = text_size[1]
+        if align=='right':
+            position = (position[0]-text_width, position[1])
+        elif align=='center':
+            position = (int(position[0]-text_width/2), int(position[1]+text_height/2))
+        cv2.putText(img, text, position, font, fontsize, (200, 200, 200), thickness)
+        return img
+
     def draw_texts(self):
         '''Usage:toolbox.draw_texts()(lambda x: x.point_area)'''
         def draw(key, img):
             lamps = self.data.lamps
             for lamp in lamps:
                 x, y, w, h = lamp.bounding_rect
-                cv2.putText(img, '{0:.2f}'.format(key(lamp)), (x, int(y+h+15)),
-                            cv2.FONT_HERSHEY_PLAIN, 1.2, (200, 200, 200), 1
-                            )
+                self.put_text(img, '{0:.2f}'.format(key(lamp)), (x, int(y+h+15)))
             return img
         return curry(draw)
 
@@ -320,37 +329,49 @@ class Toolbox():
         return img
 
     def only_that_pair(self, img):
-        if len(self.data.pairs)>0:
-            pairs = self.data.pairs
+        pairs = [p for p in self.data.pairs if p.y_label<2]
+        if len(pairs)>0:
             pairs.sort(key=lambda x: x.y_max)
-            self.data.pairs = [pairs[0]]
+            self.data.pairs = [pairs[-1]]
         return img
 
     def draw_pair_bounding_rects(self, img):
         for pair in self.data.pairs:
             rect = pair.bounding_rect
             x, y, w, h = rect
-            if not hasattr(pair, 'y_label'):
-                cv2.rectangle(img, (x, y), (x+w, y+h), (0, 200, 200), 2)
-            elif pair.y_label == 0:
+            if pair.y_label == 0:
                 cv2.rectangle(img, (x, y), (x+w, y+h), (0, 200, 0), 2)
             elif pair.y_label == 1:
                 cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 200), 2)
-            else:
-                cv2.rectangle(img, (x, y), (x+w, y+h), (200, 200, 0), 2)
+            # elif pair.y_label == 2:
+            #     cv2.rectangle(img, (x, y), (x+w, y+h), (200, 200, 0), 1)
         return img
 
     def draw_pair_bounding_text(self):
         '''Usage:toolbox.draw_pair_bounding_text()(lambda x: x.point_area)'''
-        def draw(key, img):
-            pairs = self.data.pairs
+        def draw(key, img, text_position='bottom'):
+            pairs = [p for p in self.data.pairs if p.y_label<2]
             for pair in pairs:
+                text = str(key(pair))
                 x, y, w, h = pair.bounding_rect
-                cv2.putText(img, str(key(pair)), (x, int(y+h+15)),
-                            cv2.FONT_HERSHEY_PLAIN, 1.2, (200, 200, 200), 1
-                            )
+                if text_position=='center':
+                    position = (int(x+w/2), int(y+h/2))
+                elif text_position=='bottom':
+                    position = (x, int(y+h+15))
+                self.put_text(img, text, position, align='center')
             return img
         return curry(draw)
+
+    def draw_pair_index(self, img):
+        '''Usage:toolbox.draw_pair_index()'''
+        pairs = [p for p in self.data.pairs if p.y_label<2]
+        sorted(pairs, key=lambda p:p.y_max, reverse=True)
+        for i in range(len(pairs)):
+            text = str(i)
+            pair = pairs[i]
+            x, y, w, h = pair.bounding_rect
+            self.put_text(img, text, (int(x+w/2), int(y+h/2)), fontsize=2, thickness=3, align='center')
+        return img
 
 
 if __name__ == '__main__':
@@ -375,7 +396,6 @@ if __name__ == '__main__':
              toolbox.match_pairs,
              helpers.color,
              toolbox.draw_rotated_rects,
-             toolbox.draw_texts()(lambda x: x.angle[0]),
              helpers.showoff,
              )
         print(toolbox.data.pairs)

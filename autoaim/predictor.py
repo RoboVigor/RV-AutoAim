@@ -141,14 +141,15 @@ class Predictor():
                 self.toolbox.draw_contours,
                 self.toolbox.draw_bounding_rects,
                 self.toolbox.draw_pair_bounding_rects,
+                self.toolbox.draw_pair_index,
                 self.toolbox.draw_pair_bounding_text()(
-                    lambda p: '{:.2f}'.format(p.y_max)
+                    lambda p: '{:.2f}'.format(p.y_max),
+                    text_position='bottom'
                 ),
                 curry(helpers.showoff)(timeout=timeout, update=True)
             )
         # will change in the future
         return self.toolbox
-
 
     def label(self, img, labels, debug=True):
         '''return (boolean) success'''
@@ -163,9 +164,9 @@ class Predictor():
         x_pair = self.resolve_features(
             self.features_map_pair, self.toolbox.data.pairs)
         for i in range(len(x_lamp)):
-            lamps[i].x = x_lamp[i,:].tolist()
+            lamps[i].x = x_lamp[i, :].tolist()
         for i in range(len(x_pair)):
-            pairs[i].x = x_pair[i,:].tolist()
+            pairs[i].x = x_pair[i, :].tolist()
         # label the lamps
         for lamp in lamps:
             lamp.label = 0
@@ -209,8 +210,8 @@ class Predictor():
 
 if __name__ == '__main__':
     predictor = Predictor()
-    for i in range(0, 100, 1):
-        img_url = 'data/test18/img{}.jpg'.format(i)
+    for i in range(0, 335, 1):
+        img_url = 'data/test19/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-        predictor.predict(img, debug=True, timeout=500)
+        predictor.predict(img, debug=True, timeout=100)

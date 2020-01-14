@@ -144,6 +144,8 @@ if __name__ == '__main__':
     datasets = [
         'test18',
         'test19',
+        'test20',
+        'test12'
     ]
     config = Config({'config_name': 'test'})
     dataloader = DataLoader(config)

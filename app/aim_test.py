@@ -39,13 +39,11 @@ def moving_average(last, new):
     return sum(last)/len(last)
 
 
-
-
 def process_image():
     # set up camera
     global new_img, aim
     for i in range(0, 244, 1):
-        img_url = 'data/test19/img{}.jpg'.format(i)
+        img_url = 'data/test11/img{}.jpg'.format(i)
         print('Load {}'.format(img_url), end=' ')
         new_img = autoaim.helpers.load(img_url)
         cv2.waitKey(100)
@@ -75,7 +73,7 @@ def aim_enemy():
         threshold_position_changed = 70
         # autoaim
         track_state = 0  # 0:tracking, 1:lost
-        config = autoaim.Config({'target_color':mode})
+        config = autoaim.Config({'target_color': mode})
         predictor = autoaim.Predictor(config)
         last_pair = None
         pair = None
@@ -140,7 +138,7 @@ def aim_enemy():
                         target_distance = -(x_diff*x_diff + y_diff*y_diff)/5000
                         x_diff = abs(x1+w1/2-ww/2)
                         y_diff = abs(y1+h1/2-hh/2)
-                        distance = h1/30
+                        distance = h1/50
                         label = pair.y_label*-2
                         score = pair.y_max*5+target_distance+label+distance
                         pair.score = score
@@ -180,7 +178,8 @@ def aim_enemy():
 
                 # detect pair changed
                 if not last_pair is None and not pair is None:
-                    over_threshold = abs(last_pair.y_max-pair.y_max) > threshold_target_changed
+                    over_threshold = abs(
+                        last_pair.y_max-pair.y_max) > threshold_target_changed
                     type_changed = not pair.y_label == last_pair.y_label
                     _1 = last_pair.bounding_rect[0] + \
                         last_pair.bounding_rect[2]/2
@@ -204,7 +203,8 @@ def aim_enemy():
                 # antigravity
                 y_fix = 0
                 # y_fix -= (2.75*d*d -1.6845*d - 0.4286)/5.5*h # hero
-                y_fix -= min(1.4777*d*d + -3.532*d - 2.1818, 8) / 5.5 * h  # infantry
+                y_fix -= min(1.4777*d*d + -3.532*d - 2.1818, 8) / \
+                    5.5 * h  # infantry
                 # print(d, y_fix)
 
                 # distance between camera and barrel
@@ -230,7 +230,8 @@ def aim_enemy():
                       miao(output[1], -1.2, 1.2)]
             print(output)
             if serial:
-                new_packet = autoaim.telegram.pack(0x0401, [*output, bytes([shoot_it])], seq=packet_seq)
+                new_packet = autoaim.telegram.pack(
+                    0x0401, [*output, bytes([shoot_it])], seq=packet_seq)
                 packet_seq = (packet_seq+1) % 256
 
             ##### calculate fps #####
