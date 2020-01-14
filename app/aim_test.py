@@ -43,7 +43,7 @@ def process_image():
     # set up camera
     global new_img, aim
     for i in range(0, 244, 1):
-        img_url = 'data/test11/img{}.jpg'.format(i)
+        img_url = 'data/test19/img{}.jpg'.format(i)
         print('Load {}'.format(img_url), end=' ')
         new_img = autoaim.helpers.load(img_url)
         cv2.waitKey(100)
@@ -62,7 +62,7 @@ def send_packet():
 
 
 def aim_enemy():
-    def aim(serial=True, mode='red', gui_update=None):
+    def aim(serial=True, config_name='default', gui_update=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # config
@@ -73,7 +73,7 @@ def aim_enemy():
         threshold_position_changed = 70
         # autoaim
         track_state = 0  # 0:tracking, 1:lost
-        config = autoaim.Config({'target_color': mode})
+        config = autoaim.Config({'config_name': config_name}).read()
         predictor = autoaim.Predictor(config)
         last_pair = None
         pair = None
@@ -266,5 +266,5 @@ if __name__ == '__main__':
     threading.Thread(target=process_image).start()
     threading.Thread(target=aim_enemy()(
         serial=False,
-        mode='red',
+        config_name='default',
         gui_update=lambda x: True)).start()

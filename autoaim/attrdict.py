@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+import json
+
+
 class AttrDict(object):
     """
     This class supports both . and [] operators.
@@ -23,9 +27,15 @@ class AttrDict(object):
     def __getitem__(self, key):
         return self.data[key]
 
+    def save(self, path):
+        with open(path, 'w') as json_file:
+            json_file.write(json.dumps(self.data))
+        return self
 
-# for key in sorted(mydict.keys()):
-#     print("%s: %s" % (key, mydict[key]))
+    def read(self, path):
+        with open(path, 'r') as json_file:
+            super().__setattr__('data', json.loads(json_file.read()))
+        return self
 
 
 class Lamp(AttrDict):
@@ -47,7 +57,7 @@ class Config(AttrDict):
     def __init__(self, config={}):
         _config = {
             # overall
-            'config_name': 'default_config',
+            'config_name': 'default',
             # camera
             'camera_config': '',
             # toolbox
@@ -55,10 +65,10 @@ class Config(AttrDict):
             'binary_threshold_value': None,
             'binary_threshold_scale': 0.1,
             'rect_area_threshold': (32, 16384),
-            'hsv_lower_value': 100,
+            'hsv_lower_value': 46,
             'free_scaling_parameter': 0,
             'point_area_threshold': (32, 8192),
-            'pair_ratio_threshold':(2,8),
+            'pair_ratio_threshold': (2, 8),
             'max_contour_len': 100,
             'features': ['bounding_rect', 'rotated_rect', 'ellipse', 'contour_feature'],
             'camera_matrix': [
@@ -74,3 +84,20 @@ class Config(AttrDict):
         }
         _config.update(config)
         super().__init__(_config)
+
+    def save(self, path=None):
+        if path is None:
+            path = 'configs/'+self.config_name+'.json'
+        return super().save(path)
+
+    def read(self, path=None):
+        if path is None:
+            path = 'configs/'+self.config_name+'.json'
+        return super().read(path)
+
+
+if __name__ == '__main__':
+    config = Config({'config_name': 'infantry'})
+    # config.read()
+    # print(config.data)
+    config.save()
