@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/RoboVigor/RV-AutoAim.svg?token=2Z1XgX7xLxVemPKXnupb&branch=v2)](https://travis-ci.com/RoboVigor/RV-AutoAim) [![Package version](https://badge.fury.io/gh/RoboVigor%2FRV-AutoAim.svg)](https://badge.fury.io/gh/RoboVigor%2FRV-AutoAim)
+[![Build Status](https://travis-ci.com/RoboVigor/RV-AutoAim.svg?token=2Z1XgX7xLxVemPKXnupb&branch=v2)](https://travis-ci.com/RoboVigor/RV-AutoAim) ![Package version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=gh&type=6&v=3.1.1&x2=0)
 
 # RV AutoAim
 
