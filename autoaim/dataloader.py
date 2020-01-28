@@ -30,7 +30,7 @@ class DataLoader():
     # Dataset Function
     # ===================
 
-    def generate_datasets(self, datasets, cut=0.8, seed=42):
+    def generate_datasets(self, datasets, cut=0.9, seed=42):
         '''Example input:
         datasets = ['test0', 'test1', ...]
         '''
@@ -145,8 +145,8 @@ if __name__ == '__main__':
         'test18',
         'test19',
         'test20',
-        'test12'
+        # 'test12'
     ]
-    config = Config({'config_name': 'test'})
+    config = Config()
     dataloader = DataLoader(config)
     dataloader.generate_datasets(datasets)

@@ -28,7 +28,7 @@ class CameraThread(QThread):
             #             img.data, img.shape[1], img.shape[0], QImage.Format_RGB888).rgbSwapped()
             #         self.signal.emit(self.image)
             for i in range(0, 120, 1):
-                img_url = 'data/test19/img{}.jpg'.format(i)
+                img_url = 'data/test12/img{}.jpg'.format(i)
                 image = helpers.load(img_url)
                 image = cv2.resize(image, (0, 0), fx=1.5, fy=1.5)
                 self.signal.emit(image)
@@ -87,8 +87,7 @@ class DisplayImageWidget(QWidget):
 
         self.setLayout(self.layout)
 
-        self.config = Config(
-            {'target_color': 'red', 'hsv_lower_value': 100})
+        self.config = Config()
         self.predictor = Predictor(self.config)
         self.camera_thread = CameraThread(0)
         self.toolbox = self.predictor.toolbox

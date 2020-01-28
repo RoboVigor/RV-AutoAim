@@ -67,7 +67,7 @@ class Config(AttrDict):
             'rect_area_threshold': (32, 16384),
             'hsv_lower_value': 46,
             'free_scaling_parameter': 0,
-            'point_area_threshold': (32, 8192),
+            'point_area_threshold': (16, 8192),
             'pair_ratio_threshold': (2, 8),
             'max_contour_len': 100,
             'features': ['bounding_rect', 'rotated_rect', 'ellipse', 'contour_feature'],

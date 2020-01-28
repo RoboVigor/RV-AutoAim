@@ -42,11 +42,28 @@ def moving_average(last, new):
 def process_image():
     # set up camera
     global new_img, aim
-    for i in range(0, 244, 1):
-        img_url = 'data/test19/img{}.jpg'.format(i)
-        print('Load {}'.format(img_url), end=' ')
-        new_img = autoaim.helpers.load(img_url)
-        cv2.waitKey(100)
+    camera = autoaim.Camera('data/test19.mp4')
+    capture = camera.capture
+    fps_last_timestamp = time.time()
+    fpscount = 0
+    fps = 0
+    frames = []
+    suc = True
+    while True:
+        suc, frame = capture.read()
+        if suc:
+            frames += [frame]
+        else:
+            break
+    while True:
+        for new_img in frames:
+            # time.sleep(0.001)
+            time.sleep(0.1)
+            fpscount = fpscount % 100 + 1
+            if fpscount == 100:
+                fps = 100/(time.time() - fps_last_timestamp+0.0001)
+                fps_last_timestamp = time.time()
+                print("fps: ", fps)
     aim = False
 
 
@@ -54,7 +71,7 @@ def send_packet():
     global new_packet, aim
     while aim:
         if new_packet is None:
-            time.sleep(0.001)
+            time.sleep(1/100)
             continue
         packet = new_packet
         new_packet = None
@@ -153,7 +170,7 @@ def aim_enemy():
                     x, y, w, h = pair.bounding_rect
                     toolbox.data.pairs = [p for p in pairs if p.y_label == 0]
                     toolbox.data.pairs = [pair]
-                    print('pair+')
+                    # print('pair+')
                 elif len(pairs) == 1:
                     track_state = 1
                     last_pair = pair
@@ -161,7 +178,7 @@ def aim_enemy():
                     pair.score = 6.66
                     pair.pairid = 1
                     x, y, w, h = pair.bounding_rect
-                    print('pair1')
+                    # print('pair1')
                 elif len(lamps) > 1:
                     track_state = 1
                     x1, y1, w1, h1 = lamps[-1].bounding_rect
@@ -170,11 +187,11 @@ def aim_enemy():
                     y = (y1+y2)/2
                     w = (w1+w2)/2
                     h = (h1+h2)/2
-                    print('lamps+')
+                    # print('lamps+')
                 elif len(lamps) == 1:
                     track_state = 0
                     x, y, w, h = lamps[0].bounding_rect
-                    print('lamps1')
+                    # print('lamps1')
 
                 # detect pair changed
                 if not last_pair is None and not pair is None:
@@ -228,18 +245,14 @@ def aim_enemy():
             output = [float(output[0]/10), float(output[1]/10)]
             output = [miao(output[0], -1.5, 1.5),
                       miao(output[1], -1.2, 1.2)]
-            print(output)
-            if serial:
-                new_packet = autoaim.telegram.pack(
-                    0x0401, [*output, bytes([shoot_it])], seq=packet_seq)
-                packet_seq = (packet_seq+1) % 256
+            # print(output)
 
             ##### calculate fps #####
-            fpscount = fpscount % 10 + 1
-            if fpscount == 10:
-                fps = 10/(time.time() - fps_last_timestamp)
+            fpscount = fpscount % 300 + 1
+            if fpscount == 300:
+                fps = 300/(time.time() - fps_last_timestamp)
                 fps_last_timestamp = time.time()
-                # print("fps: ", fps)
+                # print("cal fps: ", fps)
 
             ##### GUI #####
             if (not gui_update is None) and gui_update(fpscount):

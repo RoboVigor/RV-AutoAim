@@ -68,6 +68,24 @@ class Toolbox():
         self.mat.grayscale = grayscale
         return self.mat.grayscale
 
+    def split_rgb(self, mat):
+        '''mat -> grayscale_mat'''
+        c = cv2.split(mat)
+        mode = self.config.target_color
+        if mode == 'red':
+            Lower = np.array([0, 0, 80])
+            Upper = np.array([80, 80, 255])
+            grayscale = cv2.inRange(mat, Lower, Upper)
+        elif mode == 'blue':
+            #todo
+            pass
+        else:
+            #todo
+            pass
+        # bgr
+        self.mat.grayscale = grayscale
+        return self.mat.grayscale
+
     def split_hsv(self, mat):
         '''mat -> binary_mat'''
         mode = self.config.target_color
@@ -145,9 +163,9 @@ class Toolbox():
             lamp.bounding_rect = rect
             lamp.bounding_rect_area = int(w * h)
             lamp.bounding_rect_ratio = w/h
-        threshold = range(*self.config.rect_area_threshold)
+        threshold = self.config.rect_area_threshold
         self.data.lamps = [
-            x for x in lamps if x.bounding_rect_area in threshold]
+            x for x in lamps if self.__in(x.bounding_rect_area, threshold)]
         return mat
 
     def calc_point_angle(self, point):
@@ -203,10 +221,11 @@ class Toolbox():
             pts = mat[pts[0]+y, pts[1]+x]
             point_area = len(pts)
             grayscale = sum(pts) / point_area
+            lamp.area = cv2.contourArea(lamp.contour)
             lamp.point_area = point_area
             lamp.grayscale = grayscale
-        threshold = range(*self.config.point_area_threshold)
-        self.data.lamps = [x for x in lamps if x.point_area in threshold]
+        threshold = self.config.point_area_threshold
+        self.data.lamps = [x for x in lamps if self.__in(x.area, threshold)]
         return _mat
 
     def calc_ellipses(self, mat):
@@ -226,7 +245,7 @@ class Toolbox():
                 left = lamps[i]
                 right = lamps[j]
                 pair = Pair(left, right)
-                # calc bounding_rect and ratio (merge into calc_features?)
+                # calc bounding_rect and ratio
                 pair.lx, pair.ly, pair.lw, pair.lh = left.bounding_rect
                 pair.rx, pair.ry, pair.rw, pair.rh = right.bounding_rect
                 if pair.ly < pair.ry:
@@ -236,7 +255,7 @@ class Toolbox():
                 _, _, w, h = pair.bounding_rect
                 pair.ratio = w/((pair.lh+pair.rh)/2)
                 threshold = self.config.pair_ratio_threshold
-                if pair.ratio>threshold[0] and pair.ratio<threshold[1]:
+                if self.__in(pair.ratio, threshold):
                     pairs += [pair]
         self.data.pairs = pairs
         return mat
@@ -244,6 +263,9 @@ class Toolbox():
     # ===================
     # Helper
     # ===================
+
+    def __in(self, value, threshold):
+        return value>=threshold[0] and value<=threshold[1]
 
     def draw_contours(self, img):
         contours = self.data.contours
@@ -284,11 +306,11 @@ class Toolbox():
 
     def draw_texts(self):
         '''Usage:toolbox.draw_texts()(lambda x: x.point_area)'''
-        def draw(key, img):
+        def draw(key, img, bias=(0,0), fontsize=1):
             lamps = self.data.lamps
             for lamp in lamps:
                 x, y, w, h = lamp.bounding_rect
-                self.put_text(img, '{0:.2f}'.format(key(lamp)), (x, int(y+h+15)))
+                self.put_text(img, '{0:.2f}'.format(key(lamp)), (x+bias[0], int(y+bias[1]+h+15)),fontsize=fontsize)
             return img
         return curry(draw)
 
@@ -375,27 +397,29 @@ class Toolbox():
 
 
 if __name__ == '__main__':
-    for i in range(0, 100, 1):
-        img_url = 'data/test18/img{}.jpg'.format(i)
+    for i in range(35, 100, 1):
+        img_url = 'data/test19/img{}.jpg'.format(i)
         print('Load {}'.format(img_url))
         img = helpers.load(img_url)
-        config = Config({'target_color': 'white', 'hsv_lower_value': 100})
+        config = Config()
         toolbox = Toolbox(config)
         pipe(img,
-             toolbox.start,
-             helpers.peek,
-             #  toolbox.split_channels,
-             #  toolbox.preprocess,
-             #  toolbox.binarize,
-             toolbox.undistort,
-             helpers.peek,
-             toolbox.split_hsv,
-             helpers.peek,
-             toolbox.find_contours,
-             toolbox.calc_features,
-             toolbox.match_pairs,
-             helpers.color,
-             toolbox.draw_rotated_rects,
-             helpers.showoff,
-             )
+            toolbox.start,
+            helpers.peek,
+            # toolbox.split_channels,
+            # toolbox.preprocess,
+            # toolbox.binarize,
+            #  toolbox.undistort,
+            #  helpers.peek,
+            #  toolbox.split_hsv,
+             toolbox.split_rgb,
+            #  helpers.peek,
+            toolbox.find_contours,
+            toolbox.calc_features,
+            toolbox.match_pairs,
+            helpers.color,
+            toolbox.draw_rotated_rects,
+            toolbox.draw_texts()(lambda x: x.area,fontsize=0.8),
+            helpers.showoff,
+            )
         print(toolbox.data.pairs)

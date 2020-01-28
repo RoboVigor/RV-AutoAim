@@ -30,7 +30,7 @@ class Predictor():
         self.features_map_lamp = {
             'contour_feature': [
                 ('grayscale', lambda l: l.grayscale/255),
-                ('point_areas', lambda l: l.point_area/2048)
+                ('point_areas', lambda l: l.area/2048)
             ],
             'bounding_rect': [
                 ('aspect_ratio', lambda l: l.bounding_rect_ratio)
@@ -101,12 +101,17 @@ class Predictor():
         return np.array(x).T
 
     def calculate_lamps(self, img):
+        toolbox = self.toolbox
         pipe(img,
-             self.toolbox.start,
-             #  self.toolbox.undistort,
-             self.toolbox.split_hsv,
-             self.toolbox.find_contours,
-             self.toolbox.calc_features,
+             toolbox.start,
+             #  toolbox.undistort,
+             #  toolbox.split_channels,
+             #  toolbox.preprocess,
+             #  toolbox.binarize,
+             #  toolbox.split_hsv,
+             toolbox.split_rgb,
+             toolbox.find_contours,
+             toolbox.calc_features,
              )
 
     def predict(self, img, debug=False, timeout=50):
