@@ -17,7 +17,7 @@ class Camera():
         self.source = source
         self.method = method
 
-    def init(self, resolution):
+    def init(self, resolution=None):
         if self.method == 'default' or self.method == 'video':
             capture = cv2.VideoCapture(self.source)
             if resolution is not None:
@@ -49,14 +49,15 @@ class Camera():
             capture.stream_on()
             self.gx = gx
             self.capture = capture
+        return self
 
     def get_image(self):
         capture = self.capture
-        if self.method == 'default' or self.method == 'video':
+        if self.method == 'default':
             return capture.read()
         elif self.method == 'video':
             self.count = (self.count+1) % len(self.frames)
-            return self.frames[self.count]
+            return (True, self.frames[self.count])
         elif self.method == 'daheng':
             raw_image = capture.data_stream[0].get_image()
             new_img = raw_image.convert('RGB').get_numpy_array()[..., ::-1]

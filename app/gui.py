@@ -26,7 +26,7 @@ class CameraThread(QThread):
             #     if ret:
             #         self.image = QImage(
             #             img.data, img.shape[1], img.shape[0], QImage.Format_RGB888).rgbSwapped()
-            #         self.signal.emit(self.image)
+            #         self.signal['emit(self.image'])
             for i in range(0, 120, 1):
                 img_url = 'data/test12/img{}.jpg'.format(i)
                 image = helpers.load(img_url)
@@ -87,7 +87,7 @@ class DisplayImageWidget(QWidget):
 
         self.setLayout(self.layout)
 
-        self.config = Config()
+        self.config = Config().data
         self.predictor = Predictor(self.config)
         self.camera_thread = CameraThread(0)
         self.toolbox = self.predictor.toolbox
@@ -106,7 +106,7 @@ class DisplayImageWidget(QWidget):
         self.update()
 
     def set_hsv(self, value):
-        self.config.hsv_lower_value = value
+        self.config['hsv_lower_value'] = value
         self.update()
 
     def show_image(self, image):
@@ -128,7 +128,8 @@ class DisplayImageWidget(QWidget):
                     self.toolbox.draw_pair_bounding_rects,
                     self.toolbox.draw_pair_index,
                     self.toolbox.draw_pair_bounding_text()(
-                        lambda p: '{0}:{1:.1f}'.format(p.y_label, p.y_max),
+                        lambda p: '{0}:{1:.1f}'.format(
+                            p['y_label'], p['y_max']),
                         text_position='bottom'
                     ),
                     )

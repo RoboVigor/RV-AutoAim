@@ -151,8 +151,8 @@ def aim_enemy():
             lamps = aimmat.lamps
             pairs = aimmat.pairs
             # sort by confidence
-            lamps.sort(key=lambda x: x.y)
-            pairs.sort(key=lambda x: x.y)
+            lamps.sort(key=lambda x: x['y'])
+            pairs.sort(key=lambda x: x['y'])
 
             ##### analysis target #####
 
@@ -185,7 +185,8 @@ def aim_enemy():
                     pairid = 0
                     for pair in pairs:
                         pairid += 1
-                        x1, y1, w1, h1 = pair.bounding_rect
+                        x1, y1, w1, h1 = pair['bounding_rect']
+
                         x_diff = abs(target[0]-camera_movement[0]-(x1+w1/2))
                         y_diff = abs(target[1]-camera_movement[1]-(y1+h1/2))
                         target_distance = -(x_diff*x_diff + y_diff*y_diff)/5000
@@ -193,49 +194,53 @@ def aim_enemy():
                         y_diff = abs(y1+h1/2-hh/2)
                         center_distance = -(x_diff*x_diff + y_diff*y_diff)/5000
                         distance = h1/30
-                        angle = -abs(pair.angle)/35
-                        label = pair.label*-2
+                        angle = -abs(pair['angle'])/35
+                        label = pair['label']*-2
                         score = 0
                         if track_state == 0:
-                            score = pair.y*5+target_distance+label+distance
+                            score = pair['y']*5+target_distance+label+distance
                         else:
-                            score = pair.y*5+center_distance+label+distance+angle
-                        pair.score = score
-                        pair.pairid = pairid
-                        # print([pairid, pair.y, target_distance, angle,label, distance, score])
+                            score = pair['y']*5+center_distance + \
+                                label+distance+angle
+                        pair['score'] = score
+                        pair['pairid'] = pairid
+                        # print([pairid, pair['y'], target_distance, angle,label, distance, score])
                     # reset track state
                     track_state = 0
                     # decide the pair
-                    pairs = sorted(pairs, key=lambda x: x.score)
+                    pairs = sorted(pairs, key=lambda x: x['score'])
                     last_pair = pair
                     pair = pairs[-1]
-                    x, y, w, h = pair.bounding_rect
-                    aimmat.pairs = [p for p in pairs if p.label == 0]
+                    x, y, w, h = pair['bounding_rect']
+
+                    aimmat.pairs = [p for p in pairs if p['label'] == 0]
                     aimmat.pairs = [pair]
                 elif len(pairs) == 1:
                     track_state = 0
                     last_pair = pair
                     pair = pairs[0]
-                    pair.score = 6.66
-                    pair.pairid = 1
-                    x, y, w, h = pair.bounding_rect
+                    pair['score'] = 6.66
+                    pair['pairid'] = 1
+                    x, y, w, h = pair['bounding_rect']
+
                 elif len(lamps) > 1:
                     track_state = 1
-                    x1, y1, w1, h1 = lamps[-1].bounding_rect
-                    x2, y2, w2, h2 = lamps[-2].bounding_rect
+                    x1, y1, w1, h1 = lamps[-1]['bounding_rect']
+                    x2, y2, w2, h2 = lamps[-2]['bounding_rect']
                     x = (x1+x2)/2
                     y = (y1+y2)/2
                     w = (w1+w2)/2
                     h = (h1+h2)/2
                 elif len(lamps) == 1:
                     track_state = 1
-                    x, y, w, h = lamps[0].bounding_rect
+                    x, y, w, h = lamps[0]['bounding_rect']
 
                 # detect pair changed
                 if not last_pair is None and not pair is None:
-                    _ = abs(last_pair.y-pair.y)
+                    _ = abs(last_pair['y']-pair['y'])
                     over_threshold = _ > threshold_target_changed
-                    type_changed = not pair.label == last_pair.label
+                    type_changed = not pair['label'] == last_pair['label']
+
                     if over_threshold or type_changed:
                         track_state = 1
 
@@ -322,12 +327,12 @@ def aim_enemy():
                     # aimmat.binary_mat.copy(),
                     aimmat.draw_contours,
                     aimmat.draw_bounding_rects,
-                    # aimmat.draw_texts()(lambda l: '{:.2f}'.format(l.y)),
+                    # aimmat.draw_texts()(lambda l: '{:.2f}'.format(l['y'])),
                     # aimmat.draw_texts()(
-                    #     lambda l: '{:.2f}'.format(l.bounding_rect[3])),
+                    #     lambda l: '{:.2f}'.format(l['bounding_rect'][3])),
                     aimmat.draw_pair_bounding_rects,
                     aimmat.draw_pair_bounding_text()(
-                        lambda l: '{:.2f}'.format(l.angle)
+                        lambda l: '{:.2f}'.format(l['angle'])
                     ),
                     curry(aimmat.draw_centers)(center=(ww/2, hh/2)),
                     # curry(aimmat.draw_centers)(center=target_yfix_pred),

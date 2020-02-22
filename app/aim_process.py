@@ -33,9 +33,11 @@ def moving_average(last, new):
 def read_image(app_config, image_queue):
     app_config = autoaim.AttrDict(app_config)
     # set up camera
-    resolution = (app_config.width, app_config.height)
-    source = app_config.camera.source
-    method = app_config.camera.method
+    resolution = (app_config['width'], app_config['height'])
+    source = app_config['camera']['source']
+
+    method = app_config['camera']['method']
+
     # set up fps_count
     fps_last_timestamp = time.time()
     fpscount = 0
@@ -94,7 +96,7 @@ def aim_enemy(app_config, image_queue, packet_queue):
     app_config = autoaim.AttrDict(app_config)
     ##### set up var #####
     # config
-    center = (app_config.width/2, app_config.height/2)
+    center = (app_config['width']/2, app_config['height']/2)
     threshold_target_changed = 0.5
     distance_to_laser = 12
     x_fix = -15
@@ -102,7 +104,7 @@ def aim_enemy(app_config, image_queue, packet_queue):
     threshold_position_changed = 70
     # autoaim
     track_state = 0  # 0:tracking, 1:lost
-    config = autoaim.Config().read(app_config.toolbox_config.config_name)
+    config = autoaim.Config().read('toolbox_config').data
     predictor = autoaim.Predictor(config)
     last_pair = None
     pair = None
@@ -110,8 +112,8 @@ def aim_enemy(app_config, image_queue, packet_queue):
     y_fix = 0
     packet_seq = 0
     shoot_it = 0
-    target = (app_config.width/2, app_config.height/2)
-    target_yfix = (app_config.width/2, app_config.height/2)
+    target = (app_config['width']/2, app_config['height']/2)
+    target_yfix = (app_config['width']/2, app_config['height']/2)
     output = (0, 0)
     # fps
     fps_last_timestamp = time.time()
@@ -126,11 +128,13 @@ def aim_enemy(app_config, image_queue, packet_queue):
 
         toolbox = predictor.predict(img, debug=False)
         # filter out the true lamp
-        lamps = toolbox.data.lamps
-        pairs = toolbox.data.pairs
+        lamps = toolbox.data['lamps']
+
+        pairs = toolbox.data['pairs']
+
         # sort by confidence
-        lamps.sort(key=lambda x: x.y)
-        pairs.sort(key=lambda x: x.y_max)
+        lamps.sort(key=lambda x: x['y'])
+        pairs.sort(key=lambda x: x['y_max'])
 
         ##### analysis target #####
 
@@ -140,8 +144,8 @@ def aim_enemy(app_config, image_queue, packet_queue):
             track_state = 0
             x, y, w, h = (0, 0, 0, 0)
             last_pair = None
-            target = (app_config.width/2, app_config.height/2)
-            target_yfix = (app_config.width/2, app_config.height/2)
+            target = (app_config['width']/2, app_config['height']/2)
+            target_yfix = (app_config['width']/2, app_config['height']/2)
             shoot_it = 0
         else:
             # target found
@@ -153,40 +157,43 @@ def aim_enemy(app_config, image_queue, packet_queue):
                 pairid = 0
                 for pair in pairs:
                     pairid += 1
-                    x1, y1, w1, h1 = pair.bounding_rect
+                    x1, y1, w1, h1 = pair['bounding_rect']
+
                     x_diff = abs(target[0]-(x1+w1/2))
                     y_diff = abs(target[1]-(y1+h1/2))
                     target_distance = -(x_diff*x_diff + y_diff*y_diff)/5000
-                    x_diff = abs(x1+w1/2-app_config.width/2)
-                    y_diff = abs(y1+h1/2-app_config.height/2)
+                    x_diff = abs(x1+w1/2-app_config['width']/2)
+                    y_diff = abs(y1+h1/2-app_config['height']/2)
                     distance = h1/50
-                    label = pair.y_label*-2
-                    score = pair.y_max*5+target_distance+label+distance
-                    pair.score = score
-                    pair.pairid = pairid
-                    # print([pairid, pair.y, target_distance, angle,label, distance, score])
+                    label = pair['y_label']*-2
+                    score = pair['y_max']*5+target_distance+label+distance
+                    pair['score'] = score
+                    pair['pairid'] = pairid
+                    # print([pairid, pair['y'], target_distance, angle,label, distance, score])
                 # set track state
                 track_state = 1
                 # decide the pair
-                pairs = sorted(pairs, key=lambda x: x.score)
+                pairs = sorted(pairs, key=lambda x: x['score'])
                 last_pair = pair
                 pair = pairs[-1]
-                x, y, w, h = pair.bounding_rect
-                toolbox.data.pairs = [p for p in pairs if p.y_label == 0]
-                toolbox.data.pairs = [pair]
+                x, y, w, h = pair['bounding_rect']
+
+                toolbox.data['pairs'] = [p for p in pairs if p['y_label'] == 0]
+                toolbox.data['pairs'] = [pair]
                 # print('pair+')
             elif len(pairs) == 1:
                 track_state = 1
                 last_pair = pair
                 pair = pairs[0]
-                pair.score = 6.66
-                pair.pairid = 1
-                x, y, w, h = pair.bounding_rect
+                pair['score'] = 6.66
+                pair['pairid'] = 1
+                x, y, w, h = pair['bounding_rect']
+
                 # print('pair1')
             elif len(lamps) > 1:
                 track_state = 1
-                x1, y1, w1, h1 = lamps[-1].bounding_rect
-                x2, y2, w2, h2 = lamps[-2].bounding_rect
+                x1, y1, w1, h1 = lamps[-1]['bounding_rect']
+                x2, y2, w2, h2 = lamps[-2]['bounding_rect']
                 x = (x1+x2)/2
                 y = (y1+y2)/2
                 w = (w1+w2)/2
@@ -194,17 +201,18 @@ def aim_enemy(app_config, image_queue, packet_queue):
                 # print('lamps+')
             elif len(lamps) == 1:
                 track_state = 0
-                x, y, w, h = lamps[0].bounding_rect
+                x, y, w, h = lamps[0]['bounding_rect']
                 # print('lamps1')
 
             # detect pair changed
             if not last_pair is None and not pair is None:
                 over_threshold = abs(
-                    last_pair.y_max-pair.y_max) > threshold_target_changed
-                type_changed = not pair.y_label == last_pair.y_label
-                _1 = last_pair.bounding_rect[0] + \
-                    last_pair.bounding_rect[2]/2
-                _2 = pair.bounding_rect[0]+pair.bounding_rect[2]/2
+                    last_pair['y_max']-pair['y_max']) > threshold_target_changed
+                type_changed = not pair['y_label'] == last_pair['y_label']
+
+                _1 = last_pair['bounding_rect'][0] + \
+                    last_pair['bounding_rect'][2]/2
+                _2 = pair['bounding_rect'][0]+pair['bounding_rect'][2]/2
                 position_changed = abs(_1-_2) > threshold_position_changed
                 if over_threshold or type_changed or position_changed:
                     track_state = 0
@@ -264,18 +272,18 @@ def aim_enemy(app_config, image_queue, packet_queue):
             # print('cal fps: ', fps)
 
         ##### GUI #####
-        if app_config.gui_update and fpscount % app_config.gui_update == 0:
+        if app_config['gui_update'] and fpscount % app_config['gui_update'] == 0:
             # print('out: ', x, y, shoot_it)
             # print('height: ', h, w)
             pipe(
                 img,
-                # toolbox.mat.grayscale,
+                # toolbox.mat['grayscale'],
                 toolbox.draw_contours,
                 # toolbox.draw_bounding_rects,
-                toolbox.draw_texts()(lambda l: l.bounding_rect[3]),
+                toolbox.draw_texts()(lambda l: l['bounding_rect'][3]),
                 toolbox.draw_pair_bounding_rects,
                 # toolbox.draw_pair_bounding_text()(
-                #     lambda l: '{:.2f}'.format(l.angle)
+                #     lambda l: '{:.2f}'.format(l['angle'])
                 # ),
                 curry(toolbox.draw_centers)(center=center),
                 toolbox.draw_target()(target),
@@ -294,7 +302,7 @@ if __name__ == '__main__':
             'method': 'daheng'
             # 'source': 'data/test19.mp4'
         },
-        'width': 968,
+        'width': 1024,
         'height': 720,
         'serial': False,
         'gui_update': 30
@@ -302,19 +310,19 @@ if __name__ == '__main__':
     app_config = autoaim.AttrDict(app_config_dict)
     for arg in sys.argv:
         if arg == 'production':
-            app_config.serial = True
-            app_config.gui_update = None
+            app_config['serial'] = True
+            app_config['gui_update'] = None
         if arg == 'debug':
-            app_config.serial = True
+            app_config['serial'] = True
         elif arg == 'red':
-            app_config.config.target_color = 'red'
+            app_config['config']['target_color'] = 'red'
         elif arg == 'blue':
-            app_config.config.target_color = 'blue'
+            app_config['config']['target_color'] = 'blue'
         elif arg == 'white':
-            app_config.config.target_color = 'white'
+            app_config['config']['target_color'] = 'white'
         elif arg == 'analysis':
-            app_config.analysis = True
-    print(app_config.data)
+            app_config['analysis'] = True
+    print(app_config['data'])
 
     image_queue = Queue(3)
     packet_queue = Queue(3)
@@ -322,6 +330,6 @@ if __name__ == '__main__':
     Process(target=read_image, args=[app_config_dict, image_queue]).start()
     Process(target=aim_enemy, args=[app_config_dict,
                                     image_queue, packet_queue]).start()
-    if app_config.serial:
+    if app_config['serial']:
         Process(target=send_packet, args=[
             app_config_dict, packet_queue]).start()

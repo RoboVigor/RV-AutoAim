@@ -61,8 +61,9 @@ class AutoAimTestSuite(unittest.TestCase):
             predictor = Predictor()
             predictor.predict(img, debug=False)
             toolbox = predictor.toolbox
-            lamps = toolbox.data.lamps
-            lamps = [x for x in lamps if x.y > 0.5]
+            lamps = toolbox.data['lamps']
+
+            lamps = [x for x in lamps if x['y'] > 0.5]
 
     @helpers.time_this
     def test_fps(self):
@@ -73,8 +74,9 @@ class AutoAimTestSuite(unittest.TestCase):
             predictor = Predictor()
             predictor.predict(img, debug=False)
             toolbox = predictor.toolbox
-            lamps = toolbox.data.lamps
-            lamps = [x for x in lamps if x.y > 0.5]
+            lamps = toolbox.data['lamps']
+
+            lamps = [x for x in lamps if x['y'] > 0.5]
 
 
 if __name__ == '__main__':

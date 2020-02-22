@@ -20,7 +20,7 @@ class DataLoader():
 
     def __init__(self, config=None):
         if config is None:
-            config = Config()
+            config = Config().data
         predictor = Predictor(config)
         self.config = config
         self.predictor = predictor
@@ -61,10 +61,10 @@ class DataLoader():
             labeled_rects = self.load_label(dataset, image_name)
             lamps, pairs = self.predictor.label(img, labeled_rects)
             for lamp in lamps:
-                row = lamp.x + [int(lamp.label)]
+                row = lamp['x'] + [int(lamp['label'])]
                 helpers.append_csv(self.join('lamp', data_type), row)
             for pair in pairs:
-                row = pair.x + [int(pair.label)]
+                row = pair['x'] + [int(pair['label'])]
                 helpers.append_csv(self.join('pair', data_type), row)
 
     def load_label(self, dataset, file_name):
@@ -114,8 +114,8 @@ class DataLoader():
         '''Usage:dataloader.draw_label_lamps()(aimmat)'''
         def draw(aimmat, img):
             lamps = aimmat.lamps
-            boom_rects = [x.bounding_rect for x in lamps if not x.label]
-            label_rects = [x.bounding_rect for x in lamps if x.label]
+            boom_rects = [x['bounding_rect'] for x in lamps if not x['label']]
+            label_rects = [x['bounding_rect'] for x in lamps if x['label']]
             for rect in boom_rects:
                 x, y, w, h = rect
                 cv2.rectangle(img, (x, y), (x+w, y+h), (200, 0, 200), 1)

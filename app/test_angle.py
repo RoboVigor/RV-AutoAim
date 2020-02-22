@@ -8,7 +8,7 @@ cap.set(4, 768)
 
 watching_point = None
 toolbox = Toolbox()
-camera_matrix = np.array(toolbox.config.camera_matrix)
+camera_matrix = np.array(toolbox.config['camera_matrix'])
 cx = camera_matrix[0, 2]
 cy = camera_matrix[1, 2]
 

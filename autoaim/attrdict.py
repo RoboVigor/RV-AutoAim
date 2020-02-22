@@ -20,11 +20,7 @@ class AttrDict(object):
             return getattr(self.data, attr)
         else:
             try:
-                value = self.data[attr]
-                if isinstance(value, dict):
-                    return AttrDict(value)
-                else:
-                    return value
+                return self.data[attr]
             except KeyError:
                 raise AttributeError
 
@@ -46,14 +42,14 @@ class AttrDict(object):
         self.data.update(data)
 
 
-class Lamp(AttrDict):
+class Lamp():
     def __init__(self, contour):
         super().__init__({
             'contour': contour
         })
 
 
-class Pair(AttrDict):
+class Pair():
     def __init__(self, left, right):
         super().__init__({
             'left': left,
@@ -61,23 +57,30 @@ class Pair(AttrDict):
         })
 
 
-class Config(AttrDict):
+class Config():
     def __init__(self, config={}):
-        super().__init__()
+        self.data = {}
         self.read('default')
         self.update(config)
 
     def save(self, config_name=None):
         if config_name is None:
-            config_name = self.config_name
+            config_name = self.data['config_name']
         path = 'configs/'+config_name+'.json'
-        return super().save(path)
+        # todo
+        return self
 
     def read(self, config_name=None):
         if config_name is None:
-            config_name = self.config_name
+            config_name = self.data['config_name']
         path = 'configs/'+config_name+'.json'
-        return super().read(path)
+        with open(path, 'r') as json_file:
+            self.data.update(json.loads(json_file.read()))
+        return self
+
+    def update(self, data):
+        self.data.update(data)
+        return self
 
 
 if __name__ == '__main__':

@@ -152,10 +152,10 @@ def Unpacker():
 
 
 def send(data, feedback=False, port=default_port):
-    with serial.Serial(port, 115200, timeout=0.1) as ser:
+    with serial.Serial(port, 115200, timeout = 0.1) as ser:
         ser.write(bytearray(data))
         if feedback:
-            x = ser.read(1000)
+            x=ser.read(1000)
             print([i for i in x])
             print(x)
             return x
@@ -165,19 +165,19 @@ def send(data, feedback=False, port=default_port):
 
 if __name__ == '__main__':
     # pack
-    packet = pack(0x0401, [3.1234, -15.555], seq=0x04)
+    packet=pack(0x0401, [3.1234, -15.555], seq = 0x04)
     # while True:
     #     for i in range(10):
     send(pack(0x0401, [-5.0, 0.0, bytes([1])]))
     cv2.waitKey(20)
 
     # unpack
-    unpacker = Unpacker()
+    unpacker=Unpacker()
     with serial.Serial('COM6', 115200, timeout=0.1) as ser:
         while True:
-            byte = ser.read(1)
+            byte=ser.read(1)
             # print('Unpack: {:02X}'.format(byte))
-            info = unpacker.send(int.from_bytes(byte, byteorder='little'))
+            info=unpacker.send(int.from_bytes(byte, byteorder = 'little'))
             if info['state'] == 'EOF':
                 print('id: 0x{:04X}'.format(info['id']))
                 print('data: ', info['packet'])
