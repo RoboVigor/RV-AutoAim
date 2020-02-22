@@ -3,37 +3,25 @@
 
 Author:
 """
-import autoaim
+from autoaim import Camera, helpers
 import cv2
 import time
 
-print(cv2.__version__)
 
-# global var
-new_img = None
-aim = True
-ww = 1280
-hh = 1024
+camera = Camera(0, 'daheng')
+camera.init((1280, 1024))
+fps_last_timestamp = time.time()
 fpscount = 0
-
-
-def process_image():
-    # set up camera
-    global aim, new_img, ww, hh, fpscount
-
-
-if __name__ == '__main__':
-    camera = autoaim.Camera(0)
-    capture = camera.capture
-    capture.set(3, ww)
-    capture.set(4, hh)
-    # capture.set(cv2.CAP_PROP_FPS, 120)
-    # capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
-    # capture.set(cv2.CAP_PROP_EXPOSURE, -9)
-    # capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
-    last_timestamp = time.time()
-    for i in range(1000):
-        suc, new_img = capture.read()
-        if i % 150 == 149:
-            print("fps: ", 150/(time.time() - last_timestamp))
-            last_timestamp = time.time()
+fps = 0
+while True:
+    success, image = camera.get_image()
+    if success:
+        helpers.showoff(image, 1, update=True)
+        fpscount = fpscount % 100 + 1
+        if fpscount == 100:
+            fps = 100/(time.time() - fps_last_timestamp+0.0001)
+            fps_last_timestamp = time.time()
+            print('fps: ', fps)
+    else:
+        print('ERROR')
+        break
