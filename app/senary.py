@@ -8,7 +8,7 @@ import cv2
 import os
 w = 1280
 h = 720
-camera = autoaim.Camera(1)
+camera = autoaim.Camera(0)
 capture = camera.capture
 capture.set(3, w)
 capture.set(4, h)

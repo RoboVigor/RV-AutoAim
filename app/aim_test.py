@@ -42,7 +42,7 @@ def moving_average(last, new):
 def process_image():
     # set up camera
     global new_img, aim
-    camera = autoaim.Camera('data/test19.mp4')
+    camera = autoaim.Camera()
     capture = camera.capture
     fps_last_timestamp = time.time()
     fpscount = 0
@@ -57,8 +57,8 @@ def process_image():
             break
     while True:
         for new_img in frames:
-            # time.sleep(0.001)
-            time.sleep(0.1)
+            time.sleep(0.001)
+            # time.sleep(0.1)
             fpscount = fpscount % 100 + 1
             if fpscount == 100:
                 fps = 100/(time.time() - fps_last_timestamp+0.0001)
@@ -248,9 +248,9 @@ def aim_enemy():
             # print(output)
 
             ##### calculate fps #####
-            fpscount = fpscount % 300 + 1
-            if fpscount == 300:
-                fps = 300/(time.time() - fps_last_timestamp)
+            fpscount = fpscount % 200 + 1
+            if fpscount == 200:
+                fps = 200/(time.time() - fps_last_timestamp)
                 fps_last_timestamp = time.time()
                 # print("cal fps: ", fps)
 
@@ -280,4 +280,4 @@ if __name__ == '__main__':
     threading.Thread(target=aim_enemy()(
         serial=False,
         config_name='default',
-        gui_update=lambda x: True)).start()
+        gui_update=lambda x: x % 200 == 1)).start()

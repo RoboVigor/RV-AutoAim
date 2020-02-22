@@ -354,9 +354,9 @@ def aim_enemy():
                     toolbox.draw_bounding_rects,
                     toolbox.draw_texts()(lambda l: l.bounding_rect[3]),
                     toolbox.draw_pair_bounding_rects,
-                    toolbox.draw_pair_bounding_text()(
-                        lambda l: '{:.2f}'.format(l.angle)
-                    ),
+                    # toolbox.draw_pair_bounding_text()(
+                    #     lambda l: '{:.2f}'.format(l.angle)
+                    # ),
                     curry(toolbox.draw_centers)(center=(ww/2, hh/2)),
                     toolbox.draw_target()(target),
                     toolbox.draw_fps()(int(fps)),

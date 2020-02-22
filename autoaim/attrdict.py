@@ -20,7 +20,11 @@ class AttrDict(object):
             return getattr(self.data, attr)
         else:
             try:
-                return self.data[attr]
+                value = self.data[attr]
+                if isinstance(value, dict):
+                    return AttrDict(value)
+                else:
+                    return value
             except KeyError:
                 raise AttributeError
 
@@ -34,8 +38,12 @@ class AttrDict(object):
 
     def read(self, path):
         with open(path, 'r') as json_file:
-            super().__setattr__('data', json.loads(json_file.read()))
+            self.data.update(json.loads(json_file.read()))
+            # super().__setattr__('data', json.loads(json_file.read()))
         return self
+
+    def update(self, data):
+        self.data.update(data)
 
 
 class Lamp(AttrDict):
@@ -55,49 +63,25 @@ class Pair(AttrDict):
 
 class Config(AttrDict):
     def __init__(self, config={}):
-        _config = {
-            # overall
-            'config_name': 'default',
-            # camera
-            'camera_config': '',
-            # toolbox
-            'target_color': 'red',
-            'binary_threshold_value': None,
-            'binary_threshold_scale': 0.1,
-            'rect_area_threshold': (32, 16384),
-            'hsv_lower_value': 46,
-            'free_scaling_parameter': 0,
-            'point_area_threshold': (16, 8192),
-            'pair_ratio_threshold': (2, 8),
-            'max_contour_len': 100,
-            'features': ['bounding_rect', 'rotated_rect', 'ellipse', 'contour_feature'],
-            'camera_matrix': [
-                [1404.301464037759, 0, 615.802069602196],
-                [0, 1408.256656922631, 339.7994434183557],
-                [0, 0, 1]
-            ],
-            'distortion_coefficients': [-0.4432836554055214, 0.44834903270408, -0.0008076318909730519, -0.004013115215051138, 0.8668211330541649],
-            # predictor
-            'lamp_threshold': 0.5,
-            'lamp_weight': 'lamp.csv',
-            'pair_weight': 'pair.csv',
-        }
-        _config.update(config)
-        super().__init__(_config)
+        super().__init__()
+        self.read('default')
+        self.update(config)
 
-    def save(self, path=None):
-        if path is None:
-            path = 'configs/'+self.config_name+'.json'
+    def save(self, config_name=None):
+        if config_name is None:
+            config_name = self.config_name
+        path = 'configs/'+config_name+'.json'
         return super().save(path)
 
-    def read(self, path=None):
-        if path is None:
-            path = 'configs/'+self.config_name+'.json'
+    def read(self, config_name=None):
+        if config_name is None:
+            config_name = self.config_name
+        path = 'configs/'+config_name+'.json'
         return super().read(path)
 
 
 if __name__ == '__main__':
-    config = Config({'config_name': 'infantry'})
-    # config.read()
-    # print(config.data)
-    config.save()
+    config = Config().read('infantry')
+    config.update({'target_color': 'blue'})
+    print(config.data)
+    # config.save()

@@ -39,8 +39,10 @@ class Toolbox():
         camera_matrix = np.array(self.config.camera_matrix)
         distortion_coefficients = np.array(self.config.distortion_coefficients)
         h, w = mat.shape[:2]
-        new_camera_matrix, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, distortion_coefficients, (w,h),self.config.free_scaling_parameter,(w,h))
-        map1, map2 = cv2.initUndistortRectifyMap(camera_matrix, distortion_coefficients, None, new_camera_matrix, (w,h), cv2.CV_32FC1)
+        new_camera_matrix, roi = cv2.getOptimalNewCameraMatrix(
+            camera_matrix, distortion_coefficients, (w, h), self.config.free_scaling_parameter, (w, h))
+        map1, map2 = cv2.initUndistortRectifyMap(
+            camera_matrix, distortion_coefficients, None, new_camera_matrix, (w, h), cv2.CV_32FC1)
         mat = cv2.remap(mat, map1, map2, cv2.INTER_CUBIC)
         # mat = cv2.undistort(mat, camera_matrix, distortion_coefficients, None, new_camera_matrix)
         x, y, w, h = roi
@@ -52,7 +54,7 @@ class Toolbox():
         np_points = np.array([points])
         camera_matrix = np.array(self.config.camera_matrix)
         distortion_coefficients = np.array(self.config.distortion_coefficients)
-        return cv2.undistortPoints(np_points,camera_matrix, distortion_coefficients).tolist()
+        return cv2.undistortPoints(np_points, camera_matrix, distortion_coefficients).tolist()
 
     def split_channels(self, mat):
         '''mat -> grayscale_mat'''
@@ -70,18 +72,20 @@ class Toolbox():
 
     def split_rgb(self, mat):
         '''mat -> grayscale_mat'''
-        c = cv2.split(mat)
         mode = self.config.target_color
         if mode == 'red':
             Lower = np.array([0, 0, 80])
-            Upper = np.array([80, 80, 255])
+            Upper = np.array([40, 40, 255])
             grayscale = cv2.inRange(mat, Lower, Upper)
         elif mode == 'blue':
-            #todo
+            Lower = np.array([0, 0, 80])
+            Upper = np.array([40, 40, 255])
+            grayscale = cv2.inRange(mat, Lower, Upper)
             pass
         else:
-            #todo
-            pass
+            # print('split_rgb() disabled for target_color "'+str(mode)+'". split_channel() is used instead.')
+            grayscale = pipe(mat, self.split_channels,
+                             self.preprocess, self.binarize)
         # bgr
         self.mat.grayscale = grayscale
         return self.mat.grayscale
@@ -103,8 +107,10 @@ class Toolbox():
             upper_hsv = np.array([124, 255, 255])
             binary = cv2.inRange(hsv, lower_hsv, upper_hsv)
         else:
-            print('split_hsv() disabled for target_color "'+str(mode)+'". split_channel() is used instead.')
-            return pipe(mat, self.split_channels, self.preprocess, self.binarize)
+            print('split_hsv() disabled for target_color "' +
+                  str(mode)+'". split_channel() is used instead.')
+            binary = pipe(mat, self.split_channels,
+                          self.preprocess, self.binarize)
         self.mat.binary = binary
         return self.mat.binary
 
@@ -117,7 +123,7 @@ class Toolbox():
 
     def binarize(self, grayscale_mat):
         '''grayscale_mat -> binary_mat'''
-        if self.config.binary_threshold_value is None:
+        if self.config.binary_threshold_value:
             ret = cv2.threshold(grayscale_mat, 0, 255, cv2.THRESH_OTSU)[0]
         else:
             ret = self.config.binary_threshold_value
@@ -168,15 +174,17 @@ class Toolbox():
             x for x in lamps if self.__in(x.bounding_rect_area, threshold)]
         return mat
 
-    def calc_point_angle(self, point):
+    def calc_point_angle(self, point, center=None):
         x_screen, y_screen = point
         camera_matrix = np.array(self.config.camera_matrix)
-        cx = camera_matrix[0, 2]
-        cy = camera_matrix[1, 2]
+        if center is None:
+            cx = camera_matrix[0, 2]
+            cy = camera_matrix[1, 2]
+            center = (cx, cy)
         fx = camera_matrix[0, 0]
         fy = camera_matrix[1, 1]
-        yaw = math.atan((x_screen-cx)/fx)
-        pitch = math.atan((y_screen-cy)/fy)
+        yaw = math.atan((x_screen-center[0])/fx)
+        pitch = math.atan((y_screen-center[1])/fy)
         return (yaw/math.pi*180, pitch/math.pi*180)
 
     def calc_angle(self, mat):
@@ -249,9 +257,11 @@ class Toolbox():
                 pair.lx, pair.ly, pair.lw, pair.lh = left.bounding_rect
                 pair.rx, pair.ry, pair.rw, pair.rh = right.bounding_rect
                 if pair.ly < pair.ry:
-                    pair.bounding_rect = (pair.lx, pair.ly, pair.rx-pair.lx+pair.rw, pair.ry-pair.ly+pair.rh)
+                    pair.bounding_rect = (
+                        pair.lx, pair.ly, pair.rx-pair.lx+pair.rw, pair.ry-pair.ly+pair.rh)
                 else:
-                    pair.bounding_rect = (pair.lx, pair.ry, pair.rx-pair.lx+pair.rw, pair.ly-pair.ry+pair.lh)
+                    pair.bounding_rect = (
+                        pair.lx, pair.ry, pair.rx-pair.lx+pair.rw, pair.ly-pair.ry+pair.lh)
                 _, _, w, h = pair.bounding_rect
                 pair.ratio = w/((pair.lh+pair.rh)/2)
                 threshold = self.config.pair_ratio_threshold
@@ -265,7 +275,7 @@ class Toolbox():
     # ===================
 
     def __in(self, value, threshold):
-        return value>=threshold[0] and value<=threshold[1]
+        return value >= threshold[0] and value <= threshold[1]
 
     def draw_contours(self, img):
         contours = self.data.contours
@@ -293,24 +303,27 @@ class Toolbox():
             cv2.ellipse(img, ellipse, (0, 255, 0), 2)
         return img
 
-    def put_text(self, img, text, position,font=cv2.FONT_HERSHEY_PLAIN, fontsize=1.2, thickness=1, align='left'):
+    def put_text(self, img, text, position, font=cv2.FONT_HERSHEY_PLAIN, fontsize=1.2, thickness=1, align='left'):
         text_size = cv2.getTextSize(text, font, fontsize, thickness)[0]
         text_width = text_size[0]
         text_height = text_size[1]
-        if align=='right':
+        if align == 'right':
             position = (position[0]-text_width, position[1])
-        elif align=='center':
-            position = (int(position[0]-text_width/2), int(position[1]+text_height/2))
-        cv2.putText(img, text, position, font, fontsize, (200, 200, 200), thickness)
+        elif align == 'center':
+            position = (int(position[0]-text_width/2),
+                        int(position[1]+text_height/2))
+        cv2.putText(img, text, position, font, fontsize,
+                    (200, 200, 200), thickness)
         return img
 
     def draw_texts(self):
         '''Usage:toolbox.draw_texts()(lambda x: x.point_area)'''
-        def draw(key, img, bias=(0,0), fontsize=1):
+        def draw(key, img, bias=(0, 0), fontsize=1):
             lamps = self.data.lamps
             for lamp in lamps:
                 x, y, w, h = lamp.bounding_rect
-                self.put_text(img, '{0:.2f}'.format(key(lamp)), (x+bias[0], int(y+bias[1]+h+15)),fontsize=fontsize)
+                self.put_text(img, '{0:.2f}'.format(
+                    key(lamp)), (x+bias[0], int(y+bias[1]+h+15)), fontsize=fontsize)
             return img
         return curry(draw)
 
@@ -351,8 +364,8 @@ class Toolbox():
         return img
 
     def only_that_pair(self, img):
-        pairs = [p for p in self.data.pairs if p.y_label<2]
-        if len(pairs)>0:
+        pairs = [p for p in self.data.pairs if p.y_label < 2]
+        if len(pairs) > 0:
             pairs.sort(key=lambda x: x.y_max)
             self.data.pairs = [pairs[-1]]
         return img
@@ -372,13 +385,13 @@ class Toolbox():
     def draw_pair_bounding_text(self):
         '''Usage:toolbox.draw_pair_bounding_text()(lambda x: x.point_area)'''
         def draw(key, img, text_position='bottom'):
-            pairs = [p for p in self.data.pairs if p.y_label<2]
+            pairs = [p for p in self.data.pairs if p.y_label < 2]
             for pair in pairs:
                 text = str(key(pair))
                 x, y, w, h = pair.bounding_rect
-                if text_position=='center':
+                if text_position == 'center':
                     position = (int(x+w/2), int(y+h/2))
-                elif text_position=='bottom':
+                elif text_position == 'bottom':
                     position = (x, int(y+h+15))
                 self.put_text(img, text, position, align='center')
             return img
@@ -386,13 +399,14 @@ class Toolbox():
 
     def draw_pair_index(self, img):
         '''Usage:toolbox.draw_pair_index()'''
-        pairs = [p for p in self.data.pairs if p.y_label<2]
-        sorted(pairs, key=lambda p:p.y_max, reverse=True)
+        pairs = [p for p in self.data.pairs if p.y_label < 2]
+        sorted(pairs, key=lambda p: p.y_max, reverse=True)
         for i in range(len(pairs)):
             text = str(i)
             pair = pairs[i]
             x, y, w, h = pair.bounding_rect
-            self.put_text(img, text, (int(x+w/2), int(y+h/2)), fontsize=2, thickness=3, align='center')
+            self.put_text(img, text, (int(x+w/2), int(y+h/2)),
+                          fontsize=2, thickness=3, align='center')
         return img
 
 
@@ -404,22 +418,22 @@ if __name__ == '__main__':
         config = Config()
         toolbox = Toolbox(config)
         pipe(img,
-            toolbox.start,
-            helpers.peek,
-            # toolbox.split_channels,
-            # toolbox.preprocess,
-            # toolbox.binarize,
-            #  toolbox.undistort,
-            #  helpers.peek,
-            #  toolbox.split_hsv,
+             toolbox.start,
+             helpers.peek,
+             # toolbox.split_channels,
+             # toolbox.preprocess,
+             # toolbox.binarize,
+             #  toolbox.undistort,
+             #  helpers.peek,
+             #  toolbox.split_hsv,
              toolbox.split_rgb,
-            #  helpers.peek,
-            toolbox.find_contours,
-            toolbox.calc_features,
-            toolbox.match_pairs,
-            helpers.color,
-            toolbox.draw_rotated_rects,
-            toolbox.draw_texts()(lambda x: x.area,fontsize=0.8),
-            helpers.showoff,
-            )
+             #  helpers.peek,
+             toolbox.find_contours,
+             toolbox.calc_features,
+             toolbox.match_pairs,
+             helpers.color,
+             toolbox.draw_rotated_rects,
+             toolbox.draw_texts()(lambda x: x.area, fontsize=0.8),
+             helpers.showoff,
+             )
         print(toolbox.data.pairs)

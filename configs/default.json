@@ -2,7 +2,7 @@
     "config_name": "default",
     "camera_config": "",
     "target_color": "red",
-    "binary_threshold_value": null,
+    "binary_threshold_value": "",
     "binary_threshold_scale": 0.1,
     "rect_area_threshold": [
         32,
@@ -11,7 +11,7 @@
     "hsv_lower_value": 46,
     "free_scaling_parameter": 0,
     "point_area_threshold": [
-        32,
+        16,
         8192
     ],
     "pair_ratio_threshold": [

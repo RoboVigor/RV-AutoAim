@@ -6,10 +6,9 @@ Author:
 import autoaim
 import cv2
 import time
-import threading
+from multiprocessing import Process, Queue
 import sys
 from toolz import curry, pipe
-import queue
 import importlib
 
 
@@ -32,6 +31,7 @@ def moving_average(last, new):
 
 
 def read_image(app_config, image_queue):
+    app_config = autoaim.AttrDict(app_config)
     # set up camera
     resolution = (app_config.width, app_config.height)
     source = app_config.camera.source
@@ -80,6 +80,7 @@ def read_image(app_config, image_queue):
 
 
 def send_packet(app_config, packet_queue):
+    app_config = autoaim.AttrDict(app_config)
     while True:
         try:
             packet = packet_queue.get(timeout=5000)
@@ -90,6 +91,7 @@ def send_packet(app_config, packet_queue):
 
 
 def aim_enemy(app_config, image_queue, packet_queue):
+    app_config = autoaim.AttrDict(app_config)
     ##### set up var #####
     # config
     center = (app_config.width/2, app_config.height/2)
@@ -262,11 +264,11 @@ def aim_enemy(app_config, image_queue, packet_queue):
             # print('cal fps: ', fps)
 
         ##### GUI #####
-        if app_config.gui_update and app_config.gui_update(fpscount):
+        if app_config.gui_update and fpscount % app_config.gui_update == 0:
             # print('out: ', x, y, shoot_it)
             # print('height: ', h, w)
             pipe(
-                img.copy(),
+                img,
                 # toolbox.mat.grayscale,
                 toolbox.draw_contours,
                 # toolbox.draw_bounding_rects,
@@ -283,7 +285,7 @@ def aim_enemy(app_config, image_queue, packet_queue):
 
 
 if __name__ == '__main__':
-    app_config = autoaim.AttrDict({
+    app_config_dict = {
         'toolbox_config': {
             'config_name': 'default'
         },
@@ -292,13 +294,12 @@ if __name__ == '__main__':
             'method': 'daheng'
             # 'source': 'data/test19.mp4'
         },
-        'width': 1280,
+        'width': 968,
         'height': 720,
         'serial': False,
-        'gui_update': lambda x: x % 30 == 0
-    })
-    image_queue = queue.Queue(3)
-    packet_queue = queue.Queue(3)
+        'gui_update': 30
+    }
+    app_config = autoaim.AttrDict(app_config_dict)
     for arg in sys.argv:
         if arg == 'production':
             app_config.serial = True
@@ -315,10 +316,12 @@ if __name__ == '__main__':
             app_config.analysis = True
     print(app_config.data)
 
-    threading.Thread(target=read_image, args=[
-                     app_config, image_queue]).start()
-    threading.Thread(target=aim_enemy, args=[
-                     app_config, image_queue, packet_queue]).start()
+    image_queue = Queue(3)
+    packet_queue = Queue(3)
+
+    Process(target=read_image, args=[app_config_dict, image_queue]).start()
+    Process(target=aim_enemy, args=[app_config_dict,
+                                    image_queue, packet_queue]).start()
     if app_config.serial:
-        threading.Thread(target=send_packet, args=[
-                         app_config, packet_queue]).start()
+        Process(target=send_packet, args=[
+            app_config_dict, packet_queue]).start()

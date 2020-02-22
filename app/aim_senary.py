@@ -22,8 +22,9 @@ hh = 720
 # hh = 360
 
 
-def miao(val,minval,maxval):
-    return min(max(val,minval),maxval)
+def miao(val, minval, maxval):
+    return min(max(val, minval), maxval)
+
 
 def predict_movement(last, new):
     del last[0]
@@ -73,7 +74,7 @@ def process_image():
     # set up camera
     global aim, new_img, ww, hh
     i = 0
-    camera = autoaim.Camera(1)
+    camera = autoaim.Camera(0)
     capture = camera.capture
     capture.set(3, ww)
     capture.set(4, hh)
@@ -82,9 +83,9 @@ def process_image():
     while aim:
         suc, new_img = capture.read()
         img = new_img
-        cv2.imwrite(os.path.abspath(__file__ + '/../../data/capture')+'/img'+str(i)+'.jpg', img)
+        cv2.imwrite(os.path.abspath(
+            __file__ + '/../../data/capture')+'/img'+str(i)+'.jpg', img)
         i += 1
-
 
 
 def send_packet():
@@ -159,9 +160,9 @@ def aim_enemy():
             _x = output[0]
             camera_movement_x = 76.498*_x*_x + 9.5919*_x
             camera_movement_y = 0
-            if _x<0:
+            if _x < 0:
                 camera_movement_x *= -1
-            camera_movement = (camera_movement_x,camera_movement_y)
+            camera_movement = (camera_movement_x, camera_movement_y)
 
             # logic of losing target
             if len(lamps) == 0:
@@ -205,11 +206,11 @@ def aim_enemy():
                     # reset track state
                     track_state = 0
                     # decide the pair
-                    pairs = sorted(pairs,key=lambda x:x.score)
+                    pairs = sorted(pairs, key=lambda x: x.score)
                     last_pair = pair
                     pair = pairs[-1]
                     x, y, w, h = pair.bounding_rect
-                    aimmat.pairs = [p for p in pairs if p.label==0]
+                    aimmat.pairs = [p for p in pairs if p.label == 0]
                     aimmat.pairs = [pair]
                 elif len(pairs) == 1:
                     track_state = 0
@@ -269,7 +270,8 @@ def aim_enemy():
                     ),
                     0
                 )
-                target_yfix_pred = (target_yfix[0]+predict[0]*10, target_yfix[1])
+                target_yfix_pred = (
+                    target_yfix[0]+predict[0]*10, target_yfix[1])
 
                 # update track state
                 if track_state == 1:
@@ -288,7 +290,7 @@ def aim_enemy():
                 y = moving_average(moving_average_list[1], y)
 
                 # decide to shoot
-                if abs(x)<threshold_shoot and abs(y)<threshold_shoot and track_state==0:
+                if abs(x) < threshold_shoot and abs(y) < threshold_shoot and track_state == 0:
                     shoot_it = 1
                 else:
                     shoot_it = 0
@@ -296,7 +298,8 @@ def aim_enemy():
             ##### serial output #####
             if serial:
                 output = [float(x*3), float(-y*2.5)]
-                output = [miao(output[0], -0.8, 0.8),miao(output[1], -0.8, 0.8)]
+                output = [miao(output[0], -0.8, 0.8),
+                          miao(output[1], -0.8, 0.8)]
                 print(output)
                 new_packet = autoaim.telegram.pack(
                     0x0401, [*output, bytes([shoot_it])], seq=packet_seq)

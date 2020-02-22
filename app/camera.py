@@ -12,8 +12,8 @@ print(cv2.__version__)
 # global var
 new_img = None
 aim = True
-ww = 640
-hh = 360
+ww = 1280
+hh = 1024
 fpscount = 0
 
 
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     capture = camera.capture
     capture.set(3, ww)
     capture.set(4, hh)
-    capture.set(cv2.CAP_PROP_FPS, 120)
+    # capture.set(cv2.CAP_PROP_FPS, 120)
     # capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
     # capture.set(cv2.CAP_PROP_EXPOSURE, -9)
     # capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
