@@ -12,27 +12,18 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QPushButton, QVBoxLayout, QApp
 class CameraThread(QThread):
     signal = pyqtSignal(object)
 
-    def __init__(self, camera_index):
+    def __init__(self, source, method, resolution):
         super().__init__()
-        self.camera = Camera(camera_index)
-        self.capture = self.camera.capture
-        self.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
-        self.capture.set(cv2.CAP_PROP_EXPOSURE, 1)
+        self.camera = Camera(source, method).init(resolution)
         self.delay = 200
 
     def run(self):
         while True:
-            #     ret, img = self.capture.read()
-            #     if ret:
-            #         self.image = QImage(
-            #             img.data, img.shape[1], img.shape[0], QImage.Format_RGB888).rgbSwapped()
-            #         self.signal['emit(self.image'])
-            for i in range(0, 120, 1):
-                img_url = 'data/test12/img{}.jpg'.format(i)
-                image = helpers.load(img_url)
-                image = cv2.resize(image, (0, 0), fx=1.5, fy=1.5)
+            success, image = self.camera.get_image()
+            if success:
+                # image = cv2.resize(image, (0, 0), fx=1.5, fy=1.5)
                 self.signal.emit(image)
-                time.sleep(self.delay/1000)
+                # time.sleep(self.delay/1000)
 
 
 class QSetting(QWidget):
@@ -89,7 +80,7 @@ class DisplayImageWidget(QWidget):
 
         self.config = Config().data
         self.predictor = Predictor(self.config)
-        self.camera_thread = CameraThread(0)
+        self.camera_thread = CameraThread(0, 'default', (1280, 1024))
         self.toolbox = self.predictor.toolbox
         self.callback = callback
         self.image = None
@@ -149,7 +140,7 @@ class StartWindow(QMainWindow):
         self.layout.addWidget(self.widget_image)
 
         self.delay_setting = QSetting(
-            'fps', (1, 20), 5, self.widget_image.set_delay)
+            'fps', (1, 100), 5, self.widget_image.set_delay)
         self.layout.addWidget(self.delay_setting)
 
         self.hsv_setting = QSetting(

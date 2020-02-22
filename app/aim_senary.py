@@ -4,6 +4,7 @@
 Author:
 """
 import autoaim
+import app
 import cv2
 import time
 import threading
@@ -101,7 +102,7 @@ def send_packet():
 
 
 def aim_enemy():
-    def aim(serial=True, lamp_weight='model/weights/lamp.csv', pair_weight='model/weights/pair.csv', angle_weight='model/weights/angle.csv', mode='red', gui_update=None):
+    def aim(serial=True, lamp_weight='model/weights/lamp.csv', pair_weight='model/weights/pair.csv', angle_weight='model/weights/angle.csv', mode='red', gui_update_Every=None):
         ##### set up var #####
         global aim, new_img, new_packet, ww, hh
         # config
@@ -318,7 +319,7 @@ def aim_enemy():
                 # print("fps: ", fps)
 
             ##### GUI #####
-            if (not gui_update is None) and gui_update(fpscount):
+            if (not gui_update_Every is None) and gui_update_Every(fpscount):
                 # print("out: ", x, y, shoot_it)
                 # print("height: ", h, w)
                 pipe(
@@ -346,19 +347,19 @@ def aim_enemy():
 
 if __name__ == '__main__':
 
-    def gui_update(x): return x % 10 == 0
+    def gui_update_Every(x): return x % 10 == 0
     if len(sys.argv) > 1 and sys.argv[1] == 'production':
         threading.Thread(target=process_image).start()
         threading.Thread(target=send_packet).start()
         threading.Thread(target=aim_enemy()(
             serial=True,
             mode='red',
-            gui_update=None)).start()
+            gui_update_Every=None)).start()
     else:
         threading.Thread(target=process_image).start()
         # threading.Thread(target=send_packet).start()
         threading.Thread(target=aim_enemy()(
             serial=True,
             mode='red',
-            gui_update=lambda x: x % 10 == 0)).start()
+            gui_update_Every=lambda x: x % 10 == 0)).start()
     print("THE END.")
