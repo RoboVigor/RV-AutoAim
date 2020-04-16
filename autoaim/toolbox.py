@@ -135,6 +135,8 @@ class Toolbox():
         '''binary_mat -> binary_mat (lamps, contours)'''
         contours = cv2.findContours(
             binary_mat, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
+        if contours is None:
+            contours = []
         lamps = [{'contour': x} for x in contours]
         ################
         #  NEED UPDATE #

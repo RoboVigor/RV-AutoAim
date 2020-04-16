@@ -1,24 +1,34 @@
-[![Build Status](https://travis-ci.com/RoboVigor/RV-AutoAim.svg?token=2Z1XgX7xLxVemPKXnupb&branch=v2)](https://travis-ci.com/RoboVigor/RV-AutoAim) ![Package version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=gh&type=6&v=3.1.1&x2=0)
+[![Build Status](https://travis-ci.com/RoboVigor/RV-AutoAim.svg?token=2Z1XgX7xLxVemPKXnupb&branch=v2)](https://travis-ci.com/RoboVigor/RV-AutoAim) [![Package version](https://badge.fury.io/gh/RoboVigor%2FRV-AutoAim.svg)](https://badge.fury.io/gh/RoboVigor%2FRV-AutoAim)
 
 # RV AutoAim
 
 再再一次开始。
 
 ## Install
-
+1. Using conda to install basic modules
 ```bash
-# install basic requirements
 conda create -n cv numpy pytorch cudatoolkit=9.0 python=3.7 opencv=3.4.2 -c menpo
 conda activate cv
 conda install -c pytorch torchvision
-pip install -r requirements.txt
-bash install.sh
-# install developing requirements
+```
+2. Install [gxipy](http://www.daheng-imaging.com/Software/index.aspx?nodeid=304) if you use daheng camera.
+3. Install AutoAim package
+```bash
+pip install .
+```
+4. Download Dataset
+```bash
+bash scripts/download.sh
+```
+5. install developing requirements
+```bash
 conda install jupyterlab -c conda-forge
 pip install PyQt5
 ```
 
 ### Usage
+
+See `app/` for more.
 
 ```python
 from autoaim import *
@@ -39,7 +49,7 @@ pipe(img.copy(),
      aimmat.draw_rotated_rects,
      #  aimmat.draw_ellipses,
      aimmat.draw_texts()('point_area'),
-     #  aimmat.draw_texts()('grayscale'),
+     #  aimmat.draw_texts()('greyscale'),
      helpers.showoff
      )
 ```
