@@ -3,6 +3,7 @@ import unittest
 import os
 import autoaim
 from autoaim import *
+from toolz import pipe, curry
 
 data1 = [0xA5, 0x03, 0x00, 0x3E, 0x86, 0x01,
          0x00, 0x01, 0xBC, 0x02, 0x0F, 0x74]
@@ -39,19 +40,20 @@ class AutoAimTestSuite(unittest.TestCase):
         print(x)
         assert x
 
-    def test_aimmat(self):
+    def test_toolbox(self):
         '''calculate features using test18'''
         for i in range(0, 5, 1):
             img_url = 'data/test18/img{}.jpg'.format(i)
             img = helpers.load(img_url)
-            aimmat = AimMat(img)
-            aimmat.calc([
-                'contours',
-                'bounding_rects',
-                'rotated_rects',
-                'grayscales',
-                'point_areas',
-            ])
+            config = Config().data
+            toolbox = Toolbox(config)
+            pipe(img,
+                 toolbox.start,
+                 toolbox.split_rgb,
+                 toolbox.find_contours,
+                 toolbox.calc_features,
+                 toolbox.match_pairs
+                 )
 
     def test_predictor(self):
         '''predicte using test18'''
@@ -62,7 +64,6 @@ class AutoAimTestSuite(unittest.TestCase):
             predictor.predict(img, debug=False)
             toolbox = predictor.toolbox
             lamps = toolbox.data['lamps']
-
             lamps = [x for x in lamps if x['y'] > 0.5]
 
     @helpers.time_this
@@ -75,7 +76,6 @@ class AutoAimTestSuite(unittest.TestCase):
             predictor.predict(img, debug=False)
             toolbox = predictor.toolbox
             lamps = toolbox.data['lamps']
-
             lamps = [x for x in lamps if x['y'] > 0.5]
 
 

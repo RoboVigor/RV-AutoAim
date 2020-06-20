@@ -114,7 +114,6 @@ def append_csv(filename, row=''):
 
 
 def read_csv(filename):
-    print(main_dir+filename)
     with open(main_dir+filename, 'r') as csvfile:
         rows = list(csv.reader(csvfile))
         header = rows[0]

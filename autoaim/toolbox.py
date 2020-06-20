@@ -71,7 +71,10 @@ class Toolbox():
 
     def split_rgb(self, mat):
         '''mat -> grayscale_mat'''
-        mode = self.config['target_color']
+        try:
+            mode = self.config['target_color']
+        except:
+            print('?')
         if mode == 'red':
             Lower = np.array([0, 0, 80])
             Upper = np.array([40, 40, 255])
