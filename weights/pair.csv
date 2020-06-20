@@ -1,0 +1,4 @@
+bounding_rect.y_diff,bounding_rect.width_diff,bounding_rect.height_diff,rotated_rect.rotated_angle_left,rotated_rect.rotated_angle_right,rotated_rect.rotated_angle_diff,contour_feature.ratio_small,contour_feature.ratio_large
+-1.7013276,0.0069476715,-1.2004557,-0.041124,-0.8458564,-0.992054,-0.050058603,0.71941435,0.42919064
+-0.3057003,0.32877108,-0.05251873,-0.31437624,-0.079620816,-0.20561472,-0.64933586,-1.4028863,-0.77665883
+2.241028,0.38024437,1.5816647,0.19117747,0.65699106,0.90181243,0.9407763,0.30215663,-0.46939325

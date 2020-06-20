@@ -15,17 +15,19 @@ if __name__ == '__main__':
         'config_name': 'default',
         'camera': {
             'source': 0,
-            'method': 'daheng',
+            # 'method': 'daheng',
             # 'method': 'default',
-            # 'source': 'data/test19.mp4',
-            # 'method': 'video',
+            'source': autoaim.helpers.data_dir+'test19.mp4',
+            'method': 'video',
         },
         'width': 1280,
         'height': 1024,
         'serial': False,
-        'gui_update_Every': 30,
+        'gui_update_every': 10,
         # 'stop_after': 300,
         'stop_after': float('inf'),
+        "lamp_weight": 'lamp.csv',
+        "pair_weight": 'pair.csv'
     }
     image_queue = queue.Queue(3)
     packet_queue = queue.Queue(3)
@@ -48,14 +50,14 @@ if __name__ == '__main__':
     print('> Autoaim Activated.\n')
 
     threads = []
+    threads += [threading.Thread(target=app.read_image, args=[
+        app_config,
+        image_queue
+    ])]
     threads += [threading.Thread(target=app.aim_enemy, args=[
         app_config,
         image_queue,
         packet_queue
-    ])]
-    threads += [threading.Thread(target=app.read_image, args=[
-        app_config,
-        image_queue
     ])]
     if app_config['serial']:
         threads += [threading.Thread(target=app.send_packet, args=[

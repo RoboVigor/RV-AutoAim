@@ -18,10 +18,10 @@ if __name__ == '__main__':
         'config_name': 'default',
         'camera': {
             'source': 0,
-            'method': 'daheng',
+            # 'method': 'daheng',
             # 'method': 'default',
-            # 'source': 'data/test19.mp4',
-            # 'method': 'video',
+            'source': 'test19.mp4',
+            'method': 'video',
         },
         'width': 1280,
         'height': 1024,
@@ -29,6 +29,8 @@ if __name__ == '__main__':
         'gui_update_every': 10,
         # 'stop_after': 300,
         'stop_after': float('inf'),
+        "lamp_weight": 'lamp.csv',
+        "pair_weight": 'pair.csv'
     }
     for arg in sys.argv:
         if arg == 'production':

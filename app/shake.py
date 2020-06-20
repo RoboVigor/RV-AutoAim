@@ -26,3 +26,7 @@ while True:
         rotate(1)
     for i in range(amplitude, -1*amplitude, -1):
         rotate(-1)
+    for i in range(0, amplitude, 1):
+        rotate(-1)
+    for i in range(amplitude, -1*amplitude, -1):
+        rotate(1)

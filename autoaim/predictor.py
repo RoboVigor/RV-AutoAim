@@ -65,7 +65,7 @@ class Predictor():
             self.header_lamp, w_lamp = helpers.read_csv(config['lamp_weight'])
             self.header_pair, w_pair = helpers.read_csv(config['pair_weight'])
             self.w_lamp = np.array(w_lamp[0])
-            self.w_pair = np.array(w_pair).reshape(3, int(len(w_pair[0])/3))
+            self.w_pair = np.array(w_pair)
 
             # verify weights
             if verify_weights:
@@ -79,8 +79,10 @@ class Predictor():
                     print('!!! Pair weights NOT verified.')
         except(ValueError):
             print('!!! Error when loading weights')
+            raise ValueError
         except(FileNotFoundError):
-            print('!!! Weights not found')
+            print('!!! Weights not found: ' + config['lamp_weight'])
+            raise FileNotFoundError
 
     def verify_header(self, header_model, features_map):
         header_config = self.generate_header(features_map)

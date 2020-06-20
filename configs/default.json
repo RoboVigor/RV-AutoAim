@@ -50,6 +50,6 @@
         0.8668211330541649
     ],
     "lamp_threshold": 0.5,
-    "lamp_weight": "lamp.csv",
-    "pair_weight": "pair.csv"
+    "lamp_weight": "weights/lamp.csv",
+    "pair_weight": "weights/pair.csv"
 }

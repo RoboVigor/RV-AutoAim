@@ -16,7 +16,7 @@ class Camera():
                 method = 'video'
             else:
                 method = 'default'
-        self.source = source
+        self.source = helpers.main_dir+'data/'+source
         self.method = method
 
     def init(self, resolution=None):

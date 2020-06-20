@@ -9,16 +9,15 @@ with open('LICENSE') as f:
 
 setup(
     name='autoaim',
-    version='3.2.0',
+    version='3.2.1',
     description='A project for detecting armors.',
     author='FuXing PS',
     author_email='robovigor@gmail.com',
     install_requires=[
         'pyserial>=3.4',
         'toolz>=0.9.0',
-        'opencv-contrib-python',
         'numpy'
-        ],
+    ],
     license=license,
     packages=find_packages(exclude=('tests', 'docs'))
 )
