@@ -48,7 +48,7 @@ def read_image(app_config, image_queue):
             if fpscount == 100:
                 fps = 100/(time.time() - fps_last_timestamp+0.0001)
                 fps_last_timestamp = time.time()
-                print('fps: ', fps)
+                # print('fps: ', fps)
         else:
             print('> Fail to read image')
             break
@@ -107,7 +107,6 @@ def aim_enemy(app_config, image_queue, packet_queue):
         toolbox = predictor.predict(img, debug=False)
         # filter out the true lamp
         lamps = toolbox.data['lamps']
-
         pairs = toolbox.data['pairs']
 
         # sort by confidence
@@ -219,9 +218,10 @@ def aim_enemy(app_config, image_queue, packet_queue):
         # resolve angle
         # target_undistort = toolbox.undistort_points([target_yfix])[0][0]
         angle = toolbox.calc_point_angle(target_yfix, center)
-        output = [float(angle[0]/10), float(angle[1]/10)]
-        output = [miao(output[0], -1.5, 1.5),
+        output = [float(angle[0]/15), -1*float(angle[1]/15)]
+        output = [miao(output[0], -2.0, 2.0),
                   miao(output[1], -1.2, 1.2)]
+        print('output: ', output)
 
         # decide to shoot
         if abs(angle[0]) < threshold_shoot and abs(angle[1]) < threshold_shoot and track_state == 1:
@@ -233,7 +233,7 @@ def aim_enemy(app_config, image_queue, packet_queue):
         packet = autoaim.telegram.pack(
             0x0401, [*output, bytes([shoot_it])], seq=packet_seq)
         if packet_queue.full():
-            packet_queue.get_nowait()
+            packet_queue.get()
         packet_queue.put_nowait(packet)
         packet_seq = (packet_seq+1) % 256
         # print('{0:.2f} {1:.2f}'.format(*output))
@@ -252,7 +252,7 @@ def aim_enemy(app_config, image_queue, packet_queue):
             pipe(
                 img.copy(),
                 toolbox.draw_contours,
-                # toolbox.draw_bounding_rects,
+                toolbox.draw_bounding_rects,
                 toolbox.draw_texts()(lambda l: l['bounding_rect'][3]),
                 toolbox.draw_pair_bounding_rects,
                 # toolbox.draw_pair_bounding_text()(

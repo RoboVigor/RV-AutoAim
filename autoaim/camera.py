@@ -14,9 +14,10 @@ class Camera():
         if method is None:
             if type(source) is str:
                 method = 'video'
+                source = helpers.main_dir+'data/'+source
             else:
                 method = 'default'
-        self.source = helpers.main_dir+'data/'+source
+        self.source = source
         self.method = method
 
     def init(self, resolution=None):
@@ -49,8 +50,8 @@ class Camera():
             if resolution is not None:
                 capture.Width.set(resolution[0])
                 capture.Height.set(resolution[1])
-            capture.ExposureTime.set(4000)
-            capture.BalanceRatio.set(1.0039)
+            capture.ExposureTime.set(1000)
+            capture.BalanceRatio.set(1.1250)
             capture.stream_on()
             self.gx = gx
             self.capture = capture
