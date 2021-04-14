@@ -5,3 +5,5 @@ unzip data.zip
 mv RV-AutoAim-Data-**/data/* .
 rm RV-AutoAim-Data-* -rf
 rm data.zip
+
+git clone https://github.com/RoboVigor/RV-Node-Bridge node_bridge

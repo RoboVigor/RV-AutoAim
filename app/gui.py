@@ -23,7 +23,7 @@ class CameraThread(QThread):
             if success:
                 # image = cv2.resize(image, (0, 0), fx=1.5, fy=1.5)
                 self.signal.emit(image)
-                # time.sleep(self.delay/1000)
+                time.sleep(self.delay/1000)
 
 
 class QSetting(QWidget):
@@ -80,7 +80,7 @@ class DisplayImageWidget(QWidget):
 
         self.config = Config().data
         self.predictor = Predictor(self.config)
-        self.camera_thread = CameraThread(0, 'default', (1280, 1024))
+        self.camera_thread = CameraThread(0, 'daheng', (1280, 1024))
         self.toolbox = self.predictor.toolbox
         self.callback = callback
         self.image = None
@@ -102,10 +102,12 @@ class DisplayImageWidget(QWidget):
 
     def show_image(self, image):
         self.image = image
-        image = self.process(image)
-        image = QImage(
-            image.data, image.shape[1], image.shape[0], QImage.Format_RGB888).rgbSwapped()
-        self.image_frame.setPixmap(QPixmap.fromImage(image))
+        if image.shape[0]:
+            # image = self.process(image)
+            image = cv2.resize(image, (0, 0), fx=0.1, fy=0.1)
+            image = QImage(
+                image.tobytes(), image.shape[1], image.shape[0], QImage.Format_RGB888).rgbSwapped()
+            self.image_frame.setPixmap(QPixmap.fromImage(image))
 
     def update(self):
         if self.image is not None:
@@ -113,17 +115,18 @@ class DisplayImageWidget(QWidget):
 
     def process(self, img):
         self.predictor.predict(img)
-        return pipe(img,
-                    self.toolbox.draw_contours,
-                    self.toolbox.draw_bounding_rects,
-                    self.toolbox.draw_pair_bounding_rects,
-                    self.toolbox.draw_pair_index,
-                    self.toolbox.draw_pair_bounding_text()(
-                        lambda p: '{0}:{1:.1f}'.format(
-                            p['y_label'], p['y_max']),
-                        text_position='bottom'
-                    ),
-                    )
+        return img
+        # return pipe(cv2.resize(img, (0, 0), fx=0.5, fy=0.5),
+        # self.toolbox.draw_contours,
+        # self.toolbox.draw_bounding_rects,
+        # self.toolbox.draw_pair_bounding_rects,
+        # self.toolbox.draw_pair_index,
+        # self.toolbox.draw_pair_bounding_text()(
+        #     lambda p: '{0}:{1:.1f}'.format(
+        #         p['y_label'], p['y_max']),
+        #     text_position='bottom'
+        # ),
+        # )
 
 
 class StartWindow(QMainWindow):
@@ -140,7 +143,7 @@ class StartWindow(QMainWindow):
         self.layout.addWidget(self.widget_image)
 
         self.delay_setting = QSetting(
-            'fps', (1, 100), 5, self.widget_image.set_delay)
+            'fps', (1, 100), 10, self.widget_image.set_delay)
         self.layout.addWidget(self.delay_setting)
 
         self.hsv_setting = QSetting(

@@ -23,7 +23,7 @@ class Predictor():
     def __init__(self, config=None, verify_weights=True):
         # config
         if config is None:
-            config = Config().data
+            config = Config()
         self.config = config
         self.toolbox = Toolbox(config)
         # features
@@ -174,9 +174,9 @@ class Predictor():
         x_pair = self.resolve_features(
             self.features_map_pair, self.toolbox.data['pairs'])
         for i in range(len(x_lamp)):
-            lamps[i].x = x_lamp[i, :].tolist()
+            lamps[i]['x'] = x_lamp[i, :].tolist()
         for i in range(len(x_pair)):
-            pairs[i].x = x_pair[i, :].tolist()
+            pairs[i]['x'] = x_pair[i, :].tolist()
         # label the lamps
         for lamp in lamps:
             lamp['label'] = 0
@@ -205,10 +205,10 @@ class Predictor():
         #     if self.__is_in(pair['bounding_rect'], labeled_pair):
         #         pair['label'] = 2
         #         break
-        if pair['label'] == 2:
-            throw_false += 1
-        if throw_false % 3 == 0 or pair['label'] < 2:
-            new_pairs += [pair]
+            if pair['label'] == 2:
+                throw_false += 1
+            if throw_false % 3 == 0 or pair['label'] < 2:
+                new_pairs += [pair]
         self.toolbox.data['pairs'] = new_pairs
         return lamps, new_pairs
 

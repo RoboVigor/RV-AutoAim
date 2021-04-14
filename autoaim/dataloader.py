@@ -21,8 +21,8 @@ class DataLoader():
     def __init__(self, config=None):
         if config is None:
             config = Config().data
-        predictor = Predictor(config)
-        self.config = config
+        predictor = Predictor(config.data)
+        self.config = config.data
         self.predictor = predictor
         self.toolbox = predictor.toolbox
 
@@ -34,7 +34,7 @@ class DataLoader():
         '''Example input:
         datasets = ['test0', 'test1', ...]
         '''
-        self.filename = self.config.config_name
+        self.filename = self.config['config_name']
         header_lamp = self.predictor.generate_header(
             self.predictor.features_map_lamp) + ['label']
         header_pair = self.predictor.generate_header(
@@ -44,7 +44,7 @@ class DataLoader():
         helpers.new_csv(self.join('pair', 'train'), header_pair)
         helpers.new_csv(self.join('pair', 'test'), header_pair)
         for dataset in datasets:
-            dataset_path = helpers.data_path+'/'+dataset
+            dataset_path = 'data/'+dataset
             files = [x for x in os.listdir(
                 dataset_path) if os.path.isfile(dataset_path+'/'+x)]
             if seed is not None:
@@ -57,7 +57,7 @@ class DataLoader():
     def process_images(self, data_type, dataset, images):
         for image_name in images:
             print(dataset+'/'+image_name)
-            img = helpers.load(helpers.data_path+'/'+dataset+'/'+image_name)
+            img = helpers.load('data/'+dataset+'/'+image_name)
             labeled_rects = self.load_label(dataset, image_name)
             lamps, pairs = self.predictor.label(img, labeled_rects)
             for lamp in lamps:
@@ -74,7 +74,7 @@ class DataLoader():
         # load xml
         label = os.path.splitext(file_name)[0]
         label_path = os.path.join(
-            helpers.data_path, dataset, 'label', label+'.xml')
+            'data', dataset, 'label', label+'.xml')
         try:
             tree = ET.ElementTree(file=label_path)
         except:
@@ -142,10 +142,11 @@ class DataLoader():
 
 if __name__ == '__main__':
     datasets = [
-        'test18',
-        'test19',
-        'test20',
-        # 'test12'
+        # 'test18',
+        # 'test19',
+        # 'test20',
+        'test11',
+        'test12'
     ]
     config = Config()
     dataloader = DataLoader(config)
