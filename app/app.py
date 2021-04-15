@@ -2,7 +2,8 @@
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+'/../node_bridge/node_bridge/')
-import protocol, bridge
+import protocol as nbprotocol
+import bridge as nbbridge
 import autoaim
 from toolz import curry, pipe
 from queue import Full
@@ -60,16 +61,20 @@ def read_image(app_config, image_queue):
 
 def send_packet(app_config, packet_queue):
     # task count
-    bridge = bridge.NodeBridge('serial', port='/dev/ttyUSB0')
+    bridge = nbbridge.NodeBridge('serial', port='/dev/ttyTHS2')
     task_count = 0
     while task_count <= app_config['stop_after']:
         task_count = task_count % 10086 + 1
-        try:
-            packet = packet_queue.get(timeout=5000)
-            bridge.send(packet)
-        except:
-            print('exit:send_packet')
-            break
+        packet = packet_queue.get(timeout=5000)
+        bridge.send(packet)
+        print(packet)
+        # try:
+        #     packet = packet_queue.get(timeout=5000)
+        #     bridge.send(packet)
+        #     print(packet)、
+        # except:
+        #     print('exit:send_packet')
+        #     break
 
 
 def aim_enemy(app_config, image_queue, packet_queue):
@@ -101,8 +106,8 @@ def aim_enemy(app_config, image_queue, packet_queue):
     # task count
     task_count = 0
     # node bridge
-    protocol_data = protocol.NodeBridgeProtocol()
-    autoaim_data = protocol.create_protocol_data('autoaimData')
+    protocol_data = nbprotocol.NodeBridgeProtocol()
+    autoaim_data = nbprotocol.create_protocol_data('autoaimData')
     while task_count <= app_config['stop_after']:
         task_count = task_count % 10086 + 1
 
@@ -226,10 +231,10 @@ def aim_enemy(app_config, image_queue, packet_queue):
         # resolve angle
         # target_undistort = toolbox.undistort_points([target_yfix])[0][0]
         angle = toolbox.calc_point_angle(target_yfix, center)
-        output = [float(angle[0]/15), -1*float(angle[1]/15)]
+        output = [float(angle[0]/15), float(angle[1]/15)]
         output = [miao(output[0], -2.0, 2.0),
                   miao(output[1], -1.2, 1.2)]
-        print('output: ', output)
+        # print('output: ', output)
 
         # decide to shoot
         if abs(angle[0]) < threshold_shoot and abs(angle[1]) < threshold_shoot and track_state == 1:
@@ -241,7 +246,7 @@ def aim_enemy(app_config, image_queue, packet_queue):
         autoaim_data['yaw_angle_diff'] = output[0]
         autoaim_data['pitch_angle_diff'] = output[1]
         autoaim_data['fire'] = shoot_it
-        packet = protocol.pack('autoaimData', autoaim_data, seq=packet_seq)
+        packet = nbprotocol.pack('autoaimData', autoaim_data, seq=packet_seq)
         if packet_queue.full():
             packet_queue.get()
         packet_queue.put_nowait(packet)

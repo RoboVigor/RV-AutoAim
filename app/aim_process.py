@@ -4,6 +4,9 @@ https://stackoverflow.com/questions/7894791/use-numpy-array-in-shared-memory-for
 https://stackoverflow.com/questions/9754034/can-i-create-a-shared-multiarray-or-lists-of-lists-object-in-python-for-multipro
 Author:
 '''
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+'/../')
 import autoaim
 import app
 from multiprocessing import Process, Queue
@@ -41,11 +44,11 @@ if __name__ == '__main__':
         if arg == 'debug':
             app_config['serial'] = True
         elif arg == 'red':
-            app_config['config']['target_color'] = 'red'
+            app_config['target_color'] = 'red'
         elif arg == 'blue':
-            app_config['config']['target_color'] = 'blue'
+            app_config['target_color'] = 'blue'
         elif arg == 'white':
-            app_config['config']['target_color'] = 'white'
+            app_config['target_color'] = 'white'
         elif arg == 'analysis':
             app_config['analysis'] = True
     print(app_config)
